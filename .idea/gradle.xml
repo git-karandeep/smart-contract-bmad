@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/contract" />
+            <option value="$PROJECT_DIR$/location" />
+            <option value="$PROJECT_DIR$/location/chain-adapter" />
+            <option value="$PROJECT_DIR$/modules" />
+            <option value="$PROJECT_DIR$/modules/api-gateway" />
+            <option value="$PROJECT_DIR$/modules/app-bootstrap" />
+            <option value="$PROJECT_DIR$/modules/chain-adapter" />
+            <option value="$PROJECT_DIR$/modules/chain-listener" />
+            <option value="$PROJECT_DIR$/modules/common-domain" />
+            <option value="$PROJECT_DIR$/modules/common-observability" />
+            <option value="$PROJECT_DIR$/modules/contract" />
+            <option value="$PROJECT_DIR$/modules/domain-service" />
+            <option value="$PROJECT_DIR$/modules/persistence-mongo" />
+            <option value="$PROJECT_DIR$/modules/process-definitions" />
+            <option value="$PROJECT_DIR$/modules/process-workers" />
+            <option value="$PROJECT_DIR$/mongo-db" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/modules/chain-listener" />
+        <option name="gradleHome" value="" />
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>
