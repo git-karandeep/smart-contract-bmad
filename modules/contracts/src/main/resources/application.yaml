@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: smart-contracts-startup
+  mongodb:
+    #uri: mongodb+srv://connect2dockernet_db_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts
+    #tls uth Uri
+    uri : mongodb+srv://connect2dockernet_tls_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts?tls=true
+    auto-index-creation: true
+    host: connect2dockernet@contract-cluster0.a9whvtn.mongodb.net
+    port: 27017
+    database: general-contracts
+    username: connect2dockernet_tls_user
+    password: connect2dockernet
+    ssl:
+      enabled: true
+      invalid-hostname-allowed: true
+      certificate: classpath:certificate/X509-cert-6796554876012674240.pem
+server:
+  port: 8443
+
+camunda:
+  client:
+    mode: self-managed
+
+    grpc-address: http://localhost:26500
+    rest-address: http://localhost:8088
