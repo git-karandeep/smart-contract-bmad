@@ -25,4 +25,4 @@ include 'modules:api-gateway'
 findProject(':modules:api-gateway')?.name = 'api-gateway'
 include 'modules:app-bootstrap'
 findProject(':modules:app-bootstrap')?.name = 'app-bootstrap'
-
+include 'modules:contracts'

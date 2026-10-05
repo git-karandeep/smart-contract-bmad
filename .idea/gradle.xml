@@ -19,6 +19,7 @@
             <option value="$PROJECT_DIR$/modules/common-domain" />
             <option value="$PROJECT_DIR$/modules/common-observability" />
             <option value="$PROJECT_DIR$/modules/contract" />
+            <option value="$PROJECT_DIR$/modules/contracts" />
             <option value="$PROJECT_DIR$/modules/domain-service" />
             <option value="$PROJECT_DIR$/modules/persistence-mongo" />
             <option value="$PROJECT_DIR$/modules/process-definitions" />
@@ -28,8 +29,10 @@
         </option>
       </GradleProjectSettings>
       <GradleProjectSettings>
+        <option name="delegatedBuild" value="false" />
+        <option name="testRunner" value="PLATFORM" />
+        <option name="distributionType" value="WRAPPED" />
         <option name="externalProjectPath" value="$PROJECT_DIR$/modules/chain-listener" />
-        <option name="gradleHome" value="" />
       </GradleProjectSettings>
     </option>
   </component>

@@ -16,10 +16,6 @@ java {
 repositories {
     mavenCentral()
 }
-ext {
-    camundaVersion = "8.9.0"
-}
-
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
 

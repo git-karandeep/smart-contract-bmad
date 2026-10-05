@@ -30,7 +30,52 @@ This document defines the technical architecture for a blockchain-backed busines
 ---
 
 ## 2. High-Level Architecture
-
+                         ┌───────────────────┐
+                         │   Client / API    │
+                         │ React / REST API  │
+                         └─────────┬─────────┘
+                                   │
+                                   ▼
+                    ┌─────────────────────────┐
+                    │      API Gateway        │
+                    └────────────┬────────────┘
+                                 │
+                 ┌───────────────┴────────────────┐
+                 │                                │
+                 ▼                                ▼
+       ┌──────────────────┐             ┌──────────────────┐
+       │ Token Service     │             │ Workflow Service │
+       │ Spring Boot       │             │ Camunda/Temporal │
+       └────────┬─────────┘             └────────┬─────────┘
+                │                                │
+                │                                ▼
+                │                       ┌─────────────────┐
+                │                       │ Business Rules  │
+                │                       │ KYC / AML       │
+                │                       └─────────────────┘
+                │
+                ▼
+       ┌──────────────────┐
+       │     Kafka        │
+       │ Event Backbone   │
+       └────────┬─────────┘
+                │
+        ┌───────┴─────────┐
+        ▼                 ▼
+┌───────────────┐  ┌────────────────┐
+│ Blockchain    │  │ Off-chain DB   │
+│ Besu/Ethereum │  │ PostgreSQL     │
+└───────┬───────┘  └────────────────┘
+│
+▼
+┌──────────────────────┐
+│ Solidity Smart       │
+│ Contracts            │
+│                      │
+│ ERC-20 / ERC-3643    │
+│ Compliance           │
+│ Settlement           │
+└──────────────────────┘
 ```mermaid
 flowchart LR
   Client[Web / API Clients] --> API[api-gateway<br/>REST + Auth]
@@ -86,7 +131,7 @@ flowchart LR
 ## 4. Repository and Gradle Structure (BMAD `source-tree.md` shard)
 
 ```
-blockchain-platform/
+smart-contracts-bmad/
 ├── build-logic/                       # convention plugins
 │   └── src/main/kotlin/
 │       ├── java-conventions.gradle.kts

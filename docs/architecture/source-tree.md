@@ -2,7 +2,7 @@
 ## 4. Repository and Gradle Structure (BMAD `source-tree.md` shard)
 
 ```
-blockchain-platform/
+smart-contracts-bmad/
 ├── build-logic/                       # convention plugins
 │   └── src/main/kotlin/
 │       ├── java-conventions.gradle.kts
@@ -27,13 +27,19 @@ blockchain-platform/
 │   ├── domain-service/                # use cases / application layer
 │   ├── api-gateway/                   # REST controllers, authN/Z, OpenAPI
 │   └── app-bootstrap/                 # Spring Boot main(s), wiring, profiles
-├── deploy/
+├── deployment/
 │   ├── docker-compose.yml             # local: zeebe, elastic, mongo(rs), anvil/besu
 │   └── helm/
 ├── docs/
 │   ├── prd.md
+│   ├── api-spec.md
 │   ├── architecture.md
+│   ├── architecture-flow.md
+│   ├── data-model.md
+│   ├── security.md
 │   ├── architecture/                  # sharded: tech-stack.md, source-tree.md, coding-standards.md
+│   ├── prd/                           # sharded: requirements.md, actors-and-success.md, etc
+│   ├── brief/
 │   ├── epics/
 │   └── stories/
 └── .bmad-core/                        # BMAD agents/tasks/templates

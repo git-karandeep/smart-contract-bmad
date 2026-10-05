@@ -9,6 +9,15 @@
 | **Domain (reference)** | Tokenized asset transfer with escrowed settlement |
 | **Runtime** | Java 21, Spring Boot 3.x |
 
+## Documentation map
+
+- [Project brief](docs/brief/index.md)
+- [PRD](docs/prd/index.md)
+- [Architecture index](docs/architecture/index.md)
+- [Architecture overview](docs/architecture.md)
+- [API spec](docs/api-spec.md)
+- [Security](docs/security.md)
+
 ---
 
 ## Table of Contents
@@ -171,7 +180,7 @@ PENDING → VALIDATED → [AWAITING_APPROVAL] → SUBMITTED → CONFIRMING → S
 | Smart contracts | Solidity ^0.8.x, OpenZeppelin | Foundry (tests/fuzz) or Hardhat |
 | Persistence | MongoDB (domain, projections, outbox) | Camunda has its own store (A3) |
 | Process search store | Elasticsearch / OpenSearch | Required by Camunda 8 |
-| Build | Maven (multi-module) | `web3j-maven-plugin` for wrapper generation |
+| Build | gradle (multi-module) | `web3j-maven-plugin` for wrapper generation |
 | Security | Spring Security (OAuth2/JWT), Vault/KMS | Signing abstraction |
 | Observability | Micrometer, OpenTelemetry, Prometheus, Grafana | Trace id = `businessId` baggage |
 | Testing | JUnit 5, Testcontainers, Camunda Process Test, Anvil/Besu dev node | |
@@ -296,7 +305,7 @@ Applies under A4 (chain is the source of truth).
 
 ```
 contracts/src/*.sol ──forge build──▶ out/*.json (ABI + bytecode)
-        └──web3j-maven-plugin / web3j CLI──▶ chain-adapter/target/generated-sources/*.java
+        └──web3j-gradle-plugin / web3j CLI──▶ chain-adapter/target/generated-sources/*.java
 ```
 
 ---
@@ -348,92 +357,77 @@ contracts/src/*.sol ──forge build──▶ out/*.json (ABI + bytecode)
 ---
 
 ## 10. Project Structure
-
 ```
-chain-settlement-platform/
-├── README.md
-├── pom.xml                              # parent / BOM
-├── docker-compose.yml                   # Zeebe, ES, Kafka, Mongo, Anvil/Besu
-│
-├── .bmad-core/                          # BMAD agents, tasks, templates (installed by BMAD)
-├── docs/
-│   ├── brief.md                         # Analyst output
-│   ├── prd.md                           # PM output
-│   ├── architecture.md                  # Architect output
-│   ├── adr/                             # ADR-001 … ADR-00x
-│   ├── epics/                           # Sharded epics
-│   └── stories/                         # SM-authored stories (1.1.story.md …)
-│
-├── contracts/                           # Solidity (Foundry)
-│   ├── src/
-│   │   ├── AccessRegistry.sol
-│   │   ├── AssetToken.sol
-│   │   └── SettlementEscrow.sol
-│   ├── test/                            # unit, fuzz, invariant tests
-│   ├── script/                          # deploy scripts
-│   └── foundry.toml
-│
-├── processes/                           # Camunda artifacts
-│   ├── transfer-settlement.bpmn
-│   ├── reconcile-transfer.bpmn
-│   └── approval-required.dmn
-│
-├── schemas/                             # Kafka event schemas
-│
+smart-contracts-bmad/
+├── build-logic/                       # convention plugins
+│   └── src/main/kotlin/
+│       ├── java-conventions.gradle.kts
+│       ├── spring-service-conventions.gradle.kts
+│       └── quality-conventions.gradle.kts   # spotless, checkstyle, jacoco
+├── gradle/
+│   └── libs.versions.toml             # single source of dependency versions
+├── settings.gradle.kts
+├── build.gradle.kts
 ├── modules/
-│   ├── domain/                          # Aggregates, value objects, ports (pure Java)
-│   │   └── src/main/java/.../{model,port,service}
-│   ├── application/                     # Use cases orchestrating ports
-│   ├── chain-adapter/                   # Web3j implementation of ChainPort
-│   │   ├── src/main/java/.../{web3j,signing,nonce,mapper}
-│   │   └── pom.xml                      # web3j-maven-plugin config
-│   ├── persistence-mongo/               # Repositories, outbox, processed-events
-│   ├── messaging-kafka/                 # Producers, consumers, DLT config
-│   ├── workflow-workers/                # @JobWorker handlers, Zeebe config
-│   ├── chain-listener/                  # Log subscription, confirmations, reorgs
-│   ├── projector/                       # Event → Mongo read models
-│   └── api-service/                     # REST controllers, security, OpenAPI
-│
-├── apps/
-│   └── platform-app/                    # Spring Boot main(s) / profiles per role
-│
-├── deploy/
-│   ├── helm/
-│   └── k8s/
-│
-└── e2e/                                 # Cucumber / Testcontainers end-to-end tests
+│   ├── common-domain/                 # pure Java: value objects, domain events, ports
+│   ├── common-observability/          # correlation id, logging, tracing
+│   ├── contracts/                     # Solidity sources + generated Web3j wrappers
+│   │   ├── src/main/solidity/
+│   │   └── build.gradle.kts           # web3j plugin
+│   ├── chain-adapter/                 # implements ChainPort via Web3j, tx manager, retry
+│   ├── chain-listener/                # event subscription, confirmations, reorg handling
+│   ├── persistence-mongo/             # documents, repositories, outbox, idempotency store
+│   ├── process-definitions/           # BPMN/DMN/forms + deploy task (no Java logic)
+│   │   └── src/main/resources/bpmn/
+│   ├── process-workers/               # Zeebe job workers (thin; delegate to domain)
+│   ├── domain-service/                # use cases / application layer
+│   ├── api-gateway/                   # REST controllers, authN/Z, OpenAPI
+│   └── app-bootstrap/                 # Spring Boot main(s), wiring, profiles
+├── deployment/
+│   ├── docker-compose.yml             # local: zeebe, elastic, mongo(rs), anvil/besu
+│   └── helm/
+├── docs/
+│   ├── prd.md
+│   ├── api-spec.md
+│   ├── architecture.md
+│   ├── architecture-flow.md
+│   ├── data-model.md
+│   ├── security.md
+│   ├── architecture/                  # sharded: tech-stack.md, source-tree.md, coding-standards.md
+│   ├── prd/                           # sharded: requirements.md, actors-and-success.md, etc
+│   ├── brief/
+│   ├── epics/
+│   └── stories/
+└── .bmad-core/                        # BMAD agents/tasks/templates
 ```
-
-**Dependency rule:** `domain` ← `application` ← adapters (`chain-adapter`, `persistence-mongo`, `messaging-kafka`, `workflow-workers`, `api-service`). Enforce with ArchUnit.
-
----
 
 ## 11. Getting Started
 
 ### Prerequisites
 
-- JDK 21, Maven 3.9+, Docker / Docker Compose
+- JDK 21
+- Docker and Docker Compose (for local infrastructure)
 - Foundry (`forge`, `anvil`) — or Node + Hardhat
 - Web3j CLI (optional, for manual wrapper generation)
+
+The Gradle Wrapper pins Gradle 8.14.5, so a separate Gradle installation is not required.
 
 ### Run locally
 
 ```bash
-# 1. Infrastructure: Zeebe, Elasticsearch, Kafka, MongoDB (replica set), Anvil
-docker compose up -d
+# 1. Start the required services (MongoDB, Zeebe, Kafka, and Anvil) using a Compose file.
+docker compose -f path/to/docker-compose.yml up -d
 
-# 2. Build & test contracts
-cd contracts && forge build && forge test && cd ..
+# 2. Build and test the Spring Boot project
+.\gradlew.bat :modules:contracts:build
 
-# 3. Deploy contracts to local chain
-forge script contracts/script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast
-
-# 4. Generate Web3j wrappers & build all modules
-mvn clean verify
-
-# 5. Deploy BPMN/DMN (auto-deployed on startup from processes/) and start the app
-mvn -pl apps/platform-app spring-boot:run -Dspring-boot.run.profiles=local
+# 3. Start the Spring Boot application
+.\gradlew.bat :modules:contracts:bootRun
 ```
+
+The repository does not currently include a Docker Compose file or Solidity deployment scripts. Supply the Compose file for local infrastructure; contract compilation, deployment, and Web3j wrapper generation require the corresponding Solidity sources and scripts.
+
+On macOS or Linux, use `./gradlew` in place of `.\gradlew.bat`.
 
 ### Key configuration (`application.yml`)
 
@@ -520,7 +514,7 @@ Open **Camunda Operate** (`http://localhost:8081`) to watch the instance progres
 | Dev | Code + tests per story |
 | QA | Review notes, test design, risk profile per story |
 
-### 14.2 Epics
+### 14.2 Epics0
 
 | Epic | Theme | Highlights |
 |---|---|---|
