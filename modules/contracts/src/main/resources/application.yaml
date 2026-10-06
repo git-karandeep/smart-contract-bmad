@@ -1,10 +1,23 @@
+chain:
+  rpc-url: ${CHAIN_RPC_URL:http://localhost:8545}
+  chain-id: ${CHAIN_ID:31337}
+  confirmations: 6
+  contracts:
+    escrow: ${ESCROW_ADDRESS}
+    asset-token: ${ASSET_TOKEN_ADDRESS}
+  signer:
+    mode: vault            # vault | kms | local-dev-only
+    key-ref: ${SIGNER_KEY_REF}
+
 spring:
   application:
     name: smart-contracts-startup
+  aop:
+    proxy-target-class: true
   mongodb:
-    #uri: mongodb+srv://connect2dockernet_db_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts
+    uri: mongodb+srv://connect2dockernet_db_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts
     #tls uth Uri
-    uri : mongodb+srv://connect2dockernet_tls_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts?tls=true
+    #uri : mongodb+srv://connect2dockernet_tls_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts?tls=true
     auto-index-creation: true
     host: connect2dockernet@contract-cluster0.a9whvtn.mongodb.net
     port: 27017
@@ -12,15 +25,50 @@ spring:
     username: connect2dockernet_tls_user
     password: connect2dockernet
     ssl:
-      enabled: true
+      enabled: false
       invalid-hostname-allowed: true
       certificate: classpath:certificate/X509-cert-6796554876012674240.pem
 server:
   port: 8443
 
+kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      acks: all
+      properties.enable.idempotence: true
 camunda:
   client:
     mode: self-managed
 
     grpc-address: http://localhost:26500
     rest-address: http://localhost:8088
+
+resilience4j:
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration: 1000
+        retry-exceptions:
+          - java.lang.Exception
+        ignore-exceptions:
+          - java.lang.IllegalArgumentException
+      transactionalRetry:
+        max-attempts: 3
+        wait-duration: 1000
+        retry-exceptions:
+          - java.lang.Exception
+          - org.springframework.dao.DataAccessException
+          - org.springframework.transaction.TransactionException
+  circuitbreaker:
+    configs:
+      default:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+        sliding-window-size: 10
+        sliding-window-type: count-based
+      transactionalCircuitBreaker:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+        sliding-window-size: 10
+        sliding-window-type: count-based

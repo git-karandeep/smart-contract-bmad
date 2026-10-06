@@ -292,6 +292,10 @@ Applies under A4 (chain is the source of truth).
 | `AccessRegistry` | Role management (OPERATOR, COMPLIANCE, ADMIN) via OpenZeppelin `AccessControl` |
 | `AssetToken` | ERC-721/1155 representation of the asset; transfer restricted to escrow/operator |
 | `SettlementEscrow` | Holds asset/funds keyed by `businessId`; executes or cancels settlement |
+| `MyToken` | ERC-20 built on OpenZeppelin v5. It has 'owner-only mint()', a hard supply cap, and burning | 
+            An optional initial supply is minted to the owner at deployment. |
+| `TransferToken` | ERC-20 built on OpenZeppelin v5. It has 'owner-only mint()', a hard supply cap, and burning. The contract is used to transfer ownership of `MyToken` to `SettlementEscrow`.|
+
 
 **Key design rules**
 

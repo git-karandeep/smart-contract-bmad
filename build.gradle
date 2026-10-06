@@ -3,9 +3,72 @@ plugins {
 	id 'org.springframework.boot' version '4.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
+allprojects {
+	group = 'ai.generalcontracts'
+	version = '1.0.0-SNAPSHOT'
 
-group = 'com.generalcontracts'
-version = '0.0.1-SNAPSHOT'
+	repositories {
+		mavenCentral()
+		maven {
+			url 'https://artifacts.camunda.com/artifactory/camunda-bpm-release/'
+		}
+	}
+}
+ext {
+	camundaVersion = "8.9.0"
+}
+springBoot {
+	mainClass = "ai.generalcontracts.startup.GeneralContractApplication"
+}
+
+// Root project specific dependencies (if any)
+dependencies {
+	// All dependencies moved to subprojects block for inheritance
+}
+// Configures shared configurations ONLY for child modules
+subprojects {
+	apply plugin: 'java' // e.g., Every child module is a Java project
+	apply plugin: 'org.springframework.boot'
+	apply plugin: 'io.spring.dependency-management'
+
+	// Disable bootJar for library modules
+	bootJar {
+		enabled = false
+	}
+
+	dependencies {
+		// Dependencies every module needs (like logging or testing tools)
+		testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+
+		// Inherited from parent
+		implementation 'org.springframework.boot:spring-boot-starter-web'
+		implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+		implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
+		implementation "io.camunda:camunda-spring-boot-starter:$camundaVersion"
+		implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
+		implementation 'io.github.resilience4j:resilience4j-retry:2.4.0'
+		implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
+		implementation 'org.springframework.boot:spring-boot-starter-web'
+		implementation 'io.netty:netty-handler:4.2.16.Final'
+		implementation 'org.springframework.boot:spring-boot-starter-validation'
+		implementation 'org.springframework.boot:spring-boot-starter-aspectj'
+		implementation 'org.springframework.boot:spring-boot-starter-security'
+		implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-authorization-server'
+		testImplementation 'org.springframework.security:spring-security-test'
+		implementation 'org.springframework.boot:spring-boot-starter-actuator'
+		compileOnly 'org.projectlombok:lombok'
+		annotationProcessor 'org.projectlombok:lombok'
+		annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+		developmentOnly 'org.springframework.boot:spring-boot-devtools'
+		testImplementation 'org.springframework.boot:spring-boot-starter-test'
+		testImplementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+		testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+		testAnnotationProcessor 'org.projectlombok:lombok'
+		// Required for TestRestTemplate in Spring Boot 4.x
+		testImplementation 'org.springframework.boot:spring-boot-resttestclient'
+		testImplementation 'org.springframework.boot:spring-boot-restclient'
+	}
+}
 
 java {
 	toolchain {
@@ -13,33 +76,6 @@ java {
 	}
 }
 
-repositories {
-	mavenCentral()
-}
-ext {
-	camundaVersion = "8.8.0"
-}
-
-dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-
-	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
-
-	//implementation "io.camunda.spring:spring-boot-starter-camunda-sdk:${camundaVersion}"
-	implementation 'io.netty:netty-handler:4.2.16.Final'
-
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	testAnnotationProcessor 'org.projectlombok:lombok'
-
-}
 
 tasks.named('test') {
 	useJUnitPlatform()

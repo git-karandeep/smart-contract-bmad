@@ -4,36 +4,10 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
 }
 
-group = "com.generalcontracts"
+group = "ai.generalcontracts"
 version = "0.0.1-SNAPSHOT"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-repositories {
-    mavenCentral()
-}
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web")
-
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
-
-    //implementation("io.camunda.spring:spring-boot-starter-camunda-sdk:${camundaVersion}")
-    implementation("io.netty:netty-handler:4.2.16.Final")
-
-    implementation("org.springframework.boot:spring-boot-starter-validation")
-
-    compileOnly("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok")
-
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testAnnotationProcessor("org.projectlombok:lombok")
 }
 
 tasks.test {
