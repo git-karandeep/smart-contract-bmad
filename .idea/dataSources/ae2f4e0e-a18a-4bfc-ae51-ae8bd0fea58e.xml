@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataSource name="mongodb+srv://connect2dockernet_db_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/?appName=contract-Cluster0 [DEBUG]">
+  <database-model serializer="dbm" dbms="MONGO" family-id="MONGO" format-version="4.55">
+    <root id="1">
+      <ServerVersion>8.0.34</ServerVersion>
+    </root>
+    <schema id="2" parent="1" name="admin"/>
+    <schema id="3" parent="1" name="general-contracts"/>
+    <schema id="4" parent="1" name="local"/>
+  </database-model>
+</dataSource>

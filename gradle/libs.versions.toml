@@ -1,0 +1,35 @@
+[plugins]
+spring-boot = { id = "org.springframework.boot", version = "4.1.0" }
+dependency-management = { id = "io.spring.dependency-management", version = "1.1.7" }
+
+[libraries]
+# Spring Boot
+spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" }
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-boot-starter-data-mongodb = { module = "org.springframework.boot:spring-boot-starter-data-mongodb" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
+spring-boot-devtools = { module = "org.springframework.boot:spring-boot-devtools" }
+
+# Camunda
+camunda-spring-boot-starter = { module = "io.camunda:camunda-spring-boot-starter", version = "8.9.0" }
+
+# Resilience4j
+resilience4j-spring-boot4 = { module = "io.github.resilience4j:resilience4j-spring-boot4", version = "2.4.0" }
+resilience4j-retry = { module = "io.github.resilience4j:resilience4j-retry", version = "2.4.0" }
+resilience4j-circuitbreaker = { module = "io.github.resilience4j:resilience4j-circuitbreaker", version = "2.4.0" }
+
+# Security
+spring-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+spring-security-oauth2-authorization-server = { module = "org.springframework.boot:spring-boot-starter-security-oauth2-authorization-server" }
+spring-security-test = { module = "org.springframework.security:spring-security-test" }
+
+# Other
+lombok = { module = "org.projectlombok:lombok" }
+netty-handler = { module = "io.netty:netty-handler", version = "4.2.16.Final" }
+
+# Testing
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.10.0" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }

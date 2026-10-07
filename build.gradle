@@ -43,7 +43,7 @@ subprojects {
 		// Inherited from parent
 		implementation 'org.springframework.boot:spring-boot-starter-web'
 		implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
-		implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
+		//implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
 		implementation "io.camunda:camunda-spring-boot-starter:$camundaVersion"
 		implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
 		implementation 'io.github.resilience4j:resilience4j-retry:2.4.0'
