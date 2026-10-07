@@ -7,6 +7,7 @@ This directory contains the sharded architecture documentation for the platform.
 - [Technology stack](tech-stack.md)
 - [Repository and Gradle structure](source-tree.md)
 - [Coding standards](coding-standards.md)
+- [Security](security.md)
 
 ## Architecture summary
 

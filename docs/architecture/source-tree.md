@@ -37,10 +37,16 @@ smart-contracts-bmad/
 │   ├── architecture-flow.md
 │   ├── data-model.md
 │   ├── security.md
-│   ├── architecture/                  # sharded: tech-stack.md, source-tree.md, coding-standards.md
+│   ├── traceability.md
+│   ├── architecture/                  # includes index, tech-stack, source-tree, standards, security pointer
 │   ├── prd/                           # sharded: requirements.md, actors-and-success.md, etc
 │   ├── brief/
 │   ├── epics/
-│   └── stories/
+│   ├── stories/
+│   └── decisions/                     # architecture decision records
+├── tests/                             # test organization index; tests live with modules
+├── .bmad/                             # compatibility pointer to active BMAD configuration
+├── _bmad/                             # active BMAD configuration and scripts
+├── _bmad-output/                      # generated BMAD artifacts
 └── .bmad-core/                        # BMAD agents/tasks/templates
 ```

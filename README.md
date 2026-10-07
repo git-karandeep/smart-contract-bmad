@@ -17,6 +17,10 @@
 - [Architecture overview](docs/architecture.md)
 - [API spec](docs/api-spec.md)
 - [Security](docs/security.md)
+- [Epics](docs/epics/README.md)
+- [Stories](docs/stories/README.md)
+- [Architecture decisions](docs/decisions/README.md)
+- [Requirement-to-code traceability](docs/traceability.md)
 
 ---
 
