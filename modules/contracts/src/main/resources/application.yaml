@@ -22,12 +22,16 @@ spring:
     uri: mongodb+srv://connect2dockernet_db_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/?appName=contract-Cluster0
     #tls uth Uri
     #uri : mongodb+srv://connect2dockernet_tls_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts?tls=true
-    auto-index-creation: true
     host: connect2dockernet@contract-cluster0.a9whvtn.mongodb.net
+    additional-hosts: []
     port: 27017
     database: general-contracts
-    username: connect2dockernet_db_user
+    username: connect2dockernet_tls_user
     password: connect2dockernet
+    authentication-database: admin
+    auto-index-creation: true
+    socketTimeoutMS: 0
+    readPreference: primary
     ssl:
       enabled: false
       invalid-hostname-allowed: true
@@ -76,3 +80,4 @@ resilience4j:
         wait-duration-in-open-state: 10000
         sliding-window-size: 10
         sliding-window-type: count-based
+
