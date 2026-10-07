@@ -577,4 +577,14 @@ See architecture §6.4 (R3), §6.5 (idempotent chain writes).
 
 ## License
 
-TBD
+This repository is private and has no open-source license. No license is granted
+to copy, modify, distribute, or reuse this project. Contact the maintainers for
+permission.
+
+## Development workflow
+
+Use GitHub Flow with `master` as the integration branch:
+
+1. Create a short-lived `feature/<description>` or `fix/<description>` branch from `master`.
+2. Open a pull request targeting `master`; run the relevant checks and request review before merging.
+3. Do not commit directly to `master`.
