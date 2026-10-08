@@ -2,11 +2,17 @@
 spring-boot = { id = "org.springframework.boot", version = "4.1.0" }
 dependency-management = { id = "io.spring.dependency-management", version = "1.1.7" }
 
+[versions]
+web3j = "4.12.3"
+spring-kafka = "4.0.0"
+micrometer = "1.16.0"
+
 [libraries]
 # Spring Boot
 spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" }
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-boot-starter-data-mongodb = { module = "org.springframework.boot:spring-boot-starter-data-mongodb" }
+spring-boot-starter-kafka = { module = "org.springframework.boot:spring-boot-starter-kafka" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
@@ -33,3 +39,7 @@ netty-handler = { module = "io.netty:netty-handler", version = "4.2.16.Final" }
 # Testing
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.10.0" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+web3j-core = { module = "org.web3j:core", version.ref = "web3j" }
+spring-kafka = { module = "org.springframework.kafka:spring-kafka", version.ref = "spring-kafka" }
+spring-kafka-test = { module = "org.springframework.kafka:spring-kafka-test", version.ref = "spring-kafka" }
+micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }

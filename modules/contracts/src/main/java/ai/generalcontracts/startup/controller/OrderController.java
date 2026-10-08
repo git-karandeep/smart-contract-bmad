@@ -2,6 +2,7 @@ package ai.generalcontracts.startup.controller;
 
 import ai.generalcontracts.startup.model.Orders;
 import ai.generalcontracts.startup.service.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,7 +16,7 @@ public class OrderController {
     private final OrderService service;
 
     @PostMapping
-    public Orders create(@RequestBody Orders order) {
+    public Orders create(@Valid @RequestBody Orders order) {
         return service.save(order);
     }
 

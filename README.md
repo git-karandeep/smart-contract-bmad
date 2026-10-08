@@ -409,74 +409,173 @@ smart-contracts-bmad/
 └── .bmad-core/                        # BMAD agents/tasks/templates
 ```
 
+## Configuration profiles and environment variables
+
+The application supports three Spring profiles: `local`, `test`, and `prod`.
+
+- `local`: safe developer defaults that point to the local Mongo instance without embedded credentials.
+- `test`: isolated startup settings that avoid live infrastructure and disable Mongo health checks.
+- `prod`: requires externally supplied connection and signing values; no real secrets are committed in the repository.
+
+Native local runs bind to `127.0.0.1` and use the non-production HTTP Basic fixture `local-dev` / `local-dev-only`; override credentials with `APP_SECURITY_USERNAME` and `APP_SECURITY_PASSWORD`. The Compose app binds inside its container while its published port remains loopback-only.
+
+Required environment variables for production:
+
+- `MONGODB_URI`
+- `CHAIN_RPC_URL`
+- `SIGNER_KEY_REF`
+- `APP_SECURITY_USERNAME`
+- `APP_SECURITY_PASSWORD`
+
+Optional environment variables:
+
+- `MONGODB_DATABASE`
+- `MONGODB_USERNAME`
+- `MONGODB_PASSWORD`
+- `MONGODB_AUTH_DATABASE`
+- `MONGODB_SSL_ENABLED`
+- `MONGODB_SSL_INVALID_HOSTNAME_ALLOWED`
+- `MONGODB_SSL_CERTIFICATE`
+- `CHAIN_ID`
+- `CHAIN_CONFIRMATIONS`
+- `ESCROW_ADDRESS`
+- `ASSET_TOKEN_ADDRESS`
+
+The app will fail fast in the `prod` profile if required configuration is missing, and the error message only names the property and environment variable rather than exposing secret values.
+
 ## 11. Getting Started
+
+### Project Overview
+
+This repository provides a Java 21 Spring Boot foundation for a blockchain-backed settlement platform. The local setup demonstrates infrastructure connectivity and intentionally does not implement production settlement or custody.
+
+### Architecture
+
+See [Architecture](docs/architecture.md) for service boundaries and [Security](docs/security.md) for implemented controls and production limitations.
 
 ### Prerequisites
 
 - JDK 21
-- Docker and Docker Compose (for local infrastructure)
-- Foundry (`forge`, `anvil`) — or Node + Hardhat
-- Web3j CLI (optional, for manual wrapper generation)
+- Node.js 22 and npm
+- Docker with the Compose plugin (for the local stack and end-to-end tests)
+- Bash (Git Bash or WSL on Windows)
 
-The Gradle Wrapper pins Gradle 8.14.5, so a separate Gradle installation is not required.
+The Gradle Wrapper pins Gradle 8.14.5. Solidity compilation uses the pinned Hardhat toolchain and downloads Solidity 0.8.30 on first use. No separate Foundry or Web3j CLI installation is needed.
 
-### Run locally
-
-```bash
-# 1. Start the required services (MongoDB, Zeebe, Kafka, and Anvil) using a Compose file.
-docker compose -f path/to/docker-compose.yml up -d
-
-# 2. Build and test the Spring Boot project
-.\gradlew.bat :modules:contracts:build
-
-# 3. Start the Spring Boot application
-.\gradlew.bat :modules:contracts:bootRun
-```
-
-The repository does not currently include a Docker Compose file or Solidity deployment scripts. Supply the Compose file for local infrastructure; contract compilation, deployment, and Web3j wrapper generation require the corresponding Solidity sources and scripts.
-
-On macOS or Linux, use `./gradlew` in place of `.\gradlew.bat`.
-
-### Key configuration (`application.yml`)
-
-```yaml
-chain:
-  rpc-url: ${CHAIN_RPC_URL:http://localhost:8545}
-  chain-id: ${CHAIN_ID:31337}
-  confirmations: 6
-  contracts:
-    escrow: ${ESCROW_ADDRESS}
-    asset-token: ${ASSET_TOKEN_ADDRESS}
-  signer:
-    mode: vault            # vault | kms | local-dev-only
-    key-ref: ${SIGNER_KEY_REF}
-
-camunda:
-  client:
-    mode: self-managed
-    zeebe:
-      grpc-address: http://localhost:26500
-
-spring:
-  data.mongodb.uri: mongodb://localhost:27017/settlement?replicaSet=rs0
-  kafka:
-    bootstrap-servers: localhost:9092
-    producer:
-      acks: all
-      properties.enable.idempotence: true
-```
-
-### Try it
+### Build
 
 ```bash
-curl -X POST http://localhost:8080/transfers \
+npm ci
+./gradlew --no-daemon build
+```
+
+On Windows PowerShell, use `npm ci` and `.\gradlew.bat --no-daemon build`.
+
+### Local Setup
+
+After installing the project dependencies, start only the application dependencies, then run the application with the local profile:
+
+```bash
+docker compose -f deployment/docker-compose.yml up -d mongodb-setup kafka anvil
+SPRING_PROFILES_ACTIVE=local ./gradlew --no-daemon :modules:contracts:bootRun
+```
+
+On Windows PowerShell, run the same Compose command, then use `$env:SPRING_PROFILES_ACTIVE = "local"` and `.\gradlew.bat --no-daemon :modules:contracts:bootRun`.
+
+### Docker Setup
+
+```bash
+docker compose -f deployment/docker-compose.yml config
+docker compose -f deployment/docker-compose.yml up --build -d
+docker compose -f deployment/docker-compose.yml ps
+```
+
+The default stack contains the application, replica-set MongoDB, Kafka, Kafka UI, and Anvil. Camunda/Elasticsearch services are opt-in with `--profile workflow`. Published ports bind to loopback. Kafka UI is at `http://localhost:8084`.
+
+### Database
+
+MongoDB runs as a single-node `rs0` replica set. On application startup, the versioned Mongo initializer creates the `processed_events`, `outbox`, and `projection_checkpoints` infrastructure collections, the initial `transaction`, `blockchain_transaction`, `wallet`, `asset`, `token`, and `audit_event` collections, and required indexes. Initialization is idempotent and fails startup with a sanitized error if the database is unavailable.
+
+```bash
+curl -fsS -u local-dev:local-dev-only http://localhost:8080/actuator/health
+docker compose -f deployment/docker-compose.yml exec mongodb mongosh --quiet \
+  "mongodb://mongodb:27017/general-contracts?replicaSet=rs0" \
+  --eval 'db.getCollectionNames()'
+```
+
+### Kafka
+
+```bash
+docker compose -f deployment/docker-compose.yml exec kafka \
+  kafka-topics --bootstrap-server kafka:29092 --list
+```
+
+With messaging enabled, the app provisions `tokenization.events`, `transfer.events`, `compliance.events`, `settlement.events`, and `blockchain.events`, along with chain-specific topics and matching dead-letter topics. It uses keyed JSON events and retries consumer failures twice after the initial attempt. Inspect them at `http://localhost:8084`.
+
+### Blockchain
+
+Anvil listens on `http://localhost:8545`, uses chain ID `31337`, pre-funds development accounts, and mines a block every 12 seconds.
+
+```bash
+curl -s -X POST http://localhost:8545 \
   -H 'Content-Type: application/json' \
-  -d '{"assetId":"A-1001","from":"0xAAA...","to":"0xBBB...","amount":"1000"}'
-
-curl http://localhost:8080/transfers/{businessId}
+  -d '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'
+curl -fsS -u local-dev:local-dev-only http://localhost:8080/api/chain/status
 ```
 
-Open **Camunda Operate** (`http://localhost:8081`) to watch the instance progress.
+Anvil keys and balances are public test fixtures. Never use them for real funds.
+
+### Smart Contracts
+
+```bash
+npm run contracts:compile
+npm run contracts:test
+npm run contracts:lint
+```
+
+With the Compose stack running, deploy `MyToken` using Anvil's first development account:
+
+```bash
+npm run contracts:deploy:local
+```
+
+The command reports the deployed address only. It does not expose or print the account's private key, and refuses non-loopback RPC endpoints or a chain ID other than 31337.
+
+### Running Tests
+
+```bash
+./gradlew --no-daemon test
+./gradlew --no-daemon check
+```
+
+On Windows use `.\gradlew.bat`. Default Java tests are isolated from external services.
+
+Integration and API tests are separate from the default unit suite:
+
+```bash
+./gradlew --no-daemon integrationTest apiTest
+```
+
+Integration tests run JSON-RPC and Kafka round trips against in-process test brokers; API tests validate request input without MongoDB. These do not require Docker.
+
+```bash
+bash tests/e2e-smoke.sh
+docker compose -f deployment/docker-compose.yml down
+```
+
+The smoke test requires Docker, Node.js/npm (`npm ci`), Bash, and `curl`; it builds and starts an isolated stack, checks app/Mongo/Kafka/Anvil, deploys the sample contract, sends an event through Kafka, and removes its own test containers and volumes on exit. The normal local Compose stack retains named data volumes across `down`; remove those local database volumes only when intentionally resetting local data with `docker compose -f deployment/docker-compose.yml down -v`. CI builds, scans, and uploads an application image archive; production deployment is not automated by this repository.
+
+### Deployment
+
+CI builds and scans a container image archive but does not deploy it to a production environment. Configure GitHub repository rulesets to require the `verify`, `end-to-end`, and `container` checks before merging protected branches.
+
+### Troubleshooting
+
+- Check `docker compose -f deployment/docker-compose.yml ps` and `logs <service>` for readiness failures.
+- Port conflicts: set `MONGODB_HOST_PORT`, `KAFKA_HOST_PORT`, `ANVIL_HOST_PORT`, `APP_HOST_PORT`, or `KAFKA_UI_HOST_PORT` before running Compose; internal service ports remain unchanged.
+- On a fresh Mongo volume, wait for `mongodb-setup` to complete before starting the app. If initialization was interrupted, inspect its logs before removing data.
+- If contract compilation cannot download solc, verify network access to Solidity compiler distribution endpoints.
+- If a configured chain ID differs from Anvil's 31337, `/api/chain/status` fails clearly instead of reporting a healthy chain.
 
 ---
 
@@ -484,27 +583,23 @@ Open **Camunda Operate** (`http://localhost:8081`) to watch the instance progres
 
 | Level | Scope | Tooling |
 |---|---|---|
-| Contract unit / fuzz / invariant | Escrow can't double-settle, balances conserved | Foundry |
-| Domain unit | Aggregates, state machine | JUnit 5 |
-| Adapter integration | Web3j ↔ Anvil: submit, receipt, log decode, nonce | Testcontainers |
+| Contract unit | Existing `MyToken` ownership and cap behavior | Hardhat |
+| Java unit | Request correlation, profiles, startup and Mongo initialization errors | JUnit 5 |
+| Adapter integration | Web3j JSON-RPC reads and unavailable endpoint behavior | In-process JSON-RPC server |
 | Workflow tests | BPMN paths incl. timers, errors, compensation | Camunda Process Test |
-| Messaging | Idempotent consumers, DLT, ordering | Testcontainers Kafka |
-| Reorg / chaos | Anvil snapshot/revert, kill worker mid-submit | Custom e2e |
-| Architecture | Dependency rules | ArchUnit |
-| End-to-end | REST → chain → Kafka → Mongo | Cucumber |
+| Messaging integration | JSON producer/consumer round trip | Embedded Kafka |
+| API | Input validation at the REST controller | Spring MVC test |
+| End-to-end smoke | Compose app, Mongo, Kafka, Anvil health and Kafka event consumption | Docker Compose |
+
+The workflow and reorg/chaos rows describe future test coverage; this foundation does not claim those business-flow tests exist yet.
 
 ---
 
 ## 13. Security & Operations
 
-- **Keys:** never stored in repo/env in production; signing through Vault Transit / cloud KMS / HSM behind `SignerPort`.
-- **Contract access:** role-based; operator keys minimal-privilege; pausable circuit breaker.
-- **API:** OAuth2/JWT, scopes per endpoint, request size limits, rate limiting.
-- **Audit:** immutable audit collection; every state transition records actor, `businessId`, `txHash`.
-- **PII:** keep off-chain; put only hashes/identifiers on-chain.
-- **Metrics:** tx submit latency, confirmation lag, reorg count, outbox backlog, DLT depth, projection drift, Zeebe incidents.
-- **Alerts:** stuck `CONFIRMING` > SLA, nonce gap, signer balance low, drift detected (R6).
-- **Runbooks:** `docs/runbooks/` — stuck tx (speed-up/cancel), rebuild projection, replay DLT, rotate signer.
+- Secrets, keys, deployment boundaries, scans, and the distinction between implemented controls and remaining production work are documented in [Security](docs/security.md).
+- Actuator exposes health, metrics, and Prometheus endpoints; non-health endpoints require HTTP Basic authentication.
+- Correlation and transaction identifiers are validated before being copied to response headers and MDC. Do not log request bodies, credentials, signer references, or raw RPC URLs.
 
 ---
 

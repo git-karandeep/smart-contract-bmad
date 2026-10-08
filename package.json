@@ -1,5 +1,23 @@
 {
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "contracts:compile": "hardhat compile",
+    "contracts:test": "hardhat test",
+    "contracts:deploy:local": "hardhat run modules/solidity-contract/scripts/deploy-local.js --network localhost",
+    "contracts:lint": "solhint \"modules/solidity-contract/src/main/solidity/*.sol\""
+  },
   "dependencies": {
     "@openzeppelin/contracts": "^5.6.1"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^4.2.0",
+    "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.11",
+    "@nomicfoundation/hardhat-mocha": "^4.0.0",
+    "chai": "^5.3.3",
+    "ethers": "^6.17.0",
+    "hardhat": "^3.18.1",
+    "mocha": "^12.0.3",
+    "solhint": "^6.2.4"
   }
 }

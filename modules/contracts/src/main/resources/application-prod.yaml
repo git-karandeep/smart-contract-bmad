@@ -1,0 +1,40 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  security:
+    user:
+      name: ${APP_SECURITY_USERNAME:}
+      password: ${APP_SECURITY_PASSWORD:}
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:}
+      database: ${MONGODB_DATABASE:general-contracts}
+      username: ${MONGODB_USERNAME:}
+      password: ${MONGODB_PASSWORD:}
+      authentication-database: ${MONGODB_AUTH_DATABASE:admin}
+      ssl:
+        enabled: ${MONGODB_SSL_ENABLED:true}
+        invalid-hostname-allowed: ${MONGODB_SSL_INVALID_HOSTNAME_ALLOWED:false}
+        certificate: ${MONGODB_SSL_CERTIFICATE:}
+  mongodb:
+    uri: ${MONGODB_URI:}
+    database: ${MONGODB_DATABASE:general-contracts}
+    username: ${MONGODB_USERNAME:}
+    password: ${MONGODB_PASSWORD:}
+    authentication-database: ${MONGODB_AUTH_DATABASE:admin}
+    ssl:
+      enabled: ${MONGODB_SSL_ENABLED:true}
+      invalid-hostname-allowed: ${MONGODB_SSL_INVALID_HOSTNAME_ALLOWED:false}
+      certificate: ${MONGODB_SSL_CERTIFICATE:}
+
+chain:
+  rpc-url: ${CHAIN_RPC_URL:}
+  chain-id: ${CHAIN_ID:1}
+  confirmations: ${CHAIN_CONFIRMATIONS:6}
+  contracts:
+    escrow: ${ESCROW_ADDRESS:}
+    asset-token: ${ASSET_TOKEN_ADDRESS:}
+  signer:
+    mode: ${SIGNER_MODE:vault}
+    key-ref: ${SIGNER_KEY_REF:}

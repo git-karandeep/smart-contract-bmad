@@ -9,9 +9,27 @@ Project builds successfully from a clean checkout
 Spring Boot service starts locally
 Smart contracts compile and test successfully
 Local blockchain is available
-PostgreSQL and Kafka are available
+mongoDB and Kafka are available
 Application can connect to required infrastructure
 Automated unit/integration tests execute
 Docker environment can reproduce the local stack
 CI pipeline performs build and tests
 README contains complete setup instructions
+
+EPIC 0 Steps:
+
+Project Foundation
+│
+├── Repository
+├── BMAD structure
+├── Gradle
+├── Spring Boot
+├── mongoDB
+├── Kafka
+├── Blockchain
+├── Solidity
+├── Web3j
+├── Docker
+├── Security
+├── Testing
+└── CI/CD

@@ -1,0 +1,35 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/general-contracts?replicaSet=rs0&directConnection=true}
+      database: ${MONGODB_DATABASE:general-contracts}
+      username: ${MONGODB_USERNAME:}
+      password: ${MONGODB_PASSWORD:}
+      authentication-database: ${MONGODB_AUTH_DATABASE:admin}
+      ssl:
+        enabled: ${MONGODB_SSL_ENABLED:false}
+        invalid-hostname-allowed: ${MONGODB_SSL_INVALID_HOSTNAME_ALLOWED:false}
+        certificate: ${MONGODB_SSL_CERTIFICATE:}
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://localhost:27017/general-contracts?replicaSet=rs0&directConnection=true}
+    database: ${MONGODB_DATABASE:general-contracts}
+    username: ${MONGODB_USERNAME:}
+    password: ${MONGODB_PASSWORD:}
+    authentication-database: ${MONGODB_AUTH_DATABASE:admin}
+    ssl:
+      enabled: ${MONGODB_SSL_ENABLED:false}
+      invalid-hostname-allowed: ${MONGODB_SSL_INVALID_HOSTNAME_ALLOWED:false}
+      certificate: ${MONGODB_SSL_CERTIFICATE:}
+  security:
+    user:
+      name: ${APP_SECURITY_USERNAME:local-dev}
+      password: ${APP_SECURITY_PASSWORD:local-dev-only}
+app:
+  messaging:
+    enabled: ${APP_MESSAGING_ENABLED:true}
+
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}

@@ -88,3 +88,21 @@ java {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+tasks.register('integrationTest') {
+	group = 'verification'
+	description = 'Runs JSON-RPC and Kafka integration tests against local test endpoints.'
+	dependsOn ':modules:chain-adapter:integrationTest', ':modules:contracts:integrationTest'
+}
+
+tasks.register('apiTest') {
+	group = 'verification'
+	description = 'Runs API request validation tests.'
+	dependsOn ':modules:contracts:apiTest'
+}
+
+tasks.register('e2eTest') {
+	group = 'verification'
+	description = 'Runs the Docker Compose end-to-end smoke test.'
+	dependsOn ':modules:contracts:e2eTest'
+}

@@ -2,40 +2,107 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
+
+permissions:
+  contents: read
 
 jobs:
-  check:
+  verify:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
-      
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      
-      - name: Run Gradle check
-        run: ./gradlew check
-      
-      - name: Upload test results
+      - name: Install contract tooling
+        run: npm ci
+      - name: Gradle unit, integration, API, and verification tasks
+        run: ./gradlew --no-daemon test integrationTest apiTest check
+      - name: Compile and test Solidity
+        run: npm run contracts:compile && npm run contracts:test
+      - name: Solidity static checks
+        run: npm run contracts:lint
+      - name: Audit npm dependencies
+        run: npm audit --audit-level=high
+      - name: Scan source dependencies and configuration
+        uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # v0.31.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Scan for repository secrets
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.24.2 \
+            detect --source=/repo --config=/repo/.gitleaks.toml --no-git --redact --exit-code 1
+      - name: Upload Java test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: '**/build/test-results/test/**/*.xml'
-      
+          name: java-test-results
+          path: "**/build/test-results/**/*.xml"
+          if-no-files-found: ignore
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
-          path: '**/build/reports/jacoco/**/*.xml'
+          path: "**/build/reports/jacoco/**/*.xml"
+          if-no-files-found: ignore
+
+  end-to-end:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install contract tooling
+        run: npm ci
+      - name: Run local-stack smoke test
+        run: bash tests/e2e-smoke.sh
+
+  container:
+    runs-on: ubuntu-latest
+    needs: [verify, end-to-end]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build application image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deployment/Dockerfile
+          tags: smart-contracts-app:ci
+          outputs: type=docker,dest=smart-contracts-app.tar
+      - name: Scan application image
+        uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # v0.31.0
+        with:
+          input: smart-contracts-app.tar
+          scan-type: image
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Upload application image
+        uses: actions/upload-artifact@v4
+        with:
+          name: smart-contracts-app-image
+          path: smart-contracts-app.tar
+          if-no-files-found: error

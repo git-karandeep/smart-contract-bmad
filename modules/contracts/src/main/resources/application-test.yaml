@@ -1,0 +1,43 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://127.0.0.1:1/health-test?directConnection=true}
+      database: ${MONGODB_DATABASE:general-contracts-test}
+      username: ${MONGODB_USERNAME:}
+      password: ${MONGODB_PASSWORD:}
+      authentication-database: ${MONGODB_AUTH_DATABASE:admin}
+      ssl:
+        enabled: ${MONGODB_SSL_ENABLED:false}
+        invalid-hostname-allowed: ${MONGODB_SSL_INVALID_HOSTNAME_ALLOWED:false}
+        certificate: ${MONGODB_SSL_CERTIFICATE:}
+  security:
+    user:
+        name: test-user
+        password: test-only
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://127.0.0.1:1/health-test?directConnection=true}
+    database: ${MONGODB_DATABASE:general-contracts-test}
+    username: ${MONGODB_USERNAME:}
+    password: ${MONGODB_PASSWORD:}
+    authentication-database: ${MONGODB_AUTH_DATABASE:admin}
+    ssl:
+      enabled: ${MONGODB_SSL_ENABLED:false}
+      invalid-hostname-allowed: ${MONGODB_SSL_INVALID_HOSTNAME_ALLOWED:false}
+      certificate: ${MONGODB_SSL_CERTIFICATE:}
+
+server:
+  port: ${SERVER_PORT:0}
+
+management:
+  health:
+    mongo:
+      enabled: false
+
+app:
+  messaging:
+    enabled: false
+  persistence:
+    initialize: false

@@ -1,68 +1,94 @@
-chain:
-  rpc-url: ${CHAIN_RPC_URL:http://localhost:8545}
-  chain-id: ${CHAIN_ID:31337}
-  confirmations: 6
-  contracts:
-    escrow: ${ESCROW_ADDRESS}
-    asset-token: ${ASSET_TOKEN_ADDRESS}
-  signer:
-    mode: vault            # vault | kms | local-dev-only
-    key-ref: ${SIGNER_KEY_REF}
-
 spring:
   application:
     name: smart-contracts-startup
   lifecycle:
     timeout-per-shutdown-phase: 20s
-  security:
-    user:
-      name: user
-      password: user
   aop:
     proxy-target-class: true
+  data:
+    mongodb:
+      database: ${MONGODB_DATABASE:general-contracts}
+      auto-index-creation: true
+      uuid-representation: standard
+      authentication-database: ${MONGODB_AUTH_DATABASE:admin}
+      ssl:
+        enabled: ${MONGODB_SSL_ENABLED:false}
+        invalid-hostname-allowed: ${MONGODB_SSL_INVALID_HOSTNAME_ALLOWED:false}
+        certificate: ${MONGODB_SSL_CERTIFICATE:}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    admin:
+      auto-create: ${APP_MESSAGING_ENABLED:false}
+    producer:
+      acks: all
+      retries: 3
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        enable.idempotence: true
+        delivery.timeout.ms: 10000
+        request.timeout.ms: 5000
+    consumer:
+      group-id: settlement-platform
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.value.default.type: ai.generalcontracts.startup.messaging.PlatformEvent
+        spring.json.trusted.packages: ai.generalcontracts.startup.messaging
   mongodb:
-    uri: mongodb+srv://connect2dockernet_db_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/?appName=contract-Cluster0
-    #tls uth Uri
-    #uri : mongodb+srv://connect2dockernet_tls_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts?tls=true
-    host: connect2dockernet@contract-cluster0.a9whvtn.mongodb.net
-    additional-hosts: []
-    port: 27017
-    database: general-contracts
-    username: connect2dockernet_tls_user
-    password: connect2dockernet
-    authentication-database: admin
+    database: ${MONGODB_DATABASE:general-contracts}
     auto-index-creation: true
-    socketTimeoutMS: 0
-    readPreference: primary
+    uuid-representation: standard
+    authentication-database: ${MONGODB_AUTH_DATABASE:admin}
     ssl:
-      enabled: false
-      invalid-hostname-allowed: true
-      certificate: classpath:certificate/X509-cert-6796554876012674240.pem
+      enabled: ${MONGODB_SSL_ENABLED:false}
+      invalid-hostname-allowed: ${MONGODB_SSL_INVALID_HOSTNAME_ALLOWED:false}
+      certificate: ${MONGODB_SSL_CERTIFICATE:}
+
 server:
-  port: ${SERVER_PORT:8443}
+  port: ${SERVER_PORT:8080}
   shutdown: graceful
 
 management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 logging:
   level:
     root: ${LOG_LEVEL:INFO}
 
-kafka:
-    bootstrap-servers: localhost:9092
-    producer:
-      acks: all
-      properties.enable.idempotence: true
+chain:
+  rpc-url: ${CHAIN_RPC_URL:http://localhost:8545}
+  rpc-timeout-seconds: ${CHAIN_RPC_TIMEOUT_SECONDS:5}
+  chain-id: ${CHAIN_ID:31337}
+  confirmations: ${CHAIN_CONFIRMATIONS:6}
+  contracts:
+    escrow: ${ESCROW_ADDRESS:}
+    asset-token: ${ASSET_TOKEN_ADDRESS:}
+  signer:
+    mode: ${SIGNER_MODE:vault}
+    key-ref: ${SIGNER_KEY_REF:}
+
+app:
+  messaging:
+    enabled: ${APP_MESSAGING_ENABLED:false}
+
 camunda:
   client:
     mode: self-managed
-
-    grpc-address: http://localhost:26500
-    rest-address: http://localhost:8080
+    grpc-address: ${CAMUNDA_GRPC_ADDRESS:http://localhost:26500}
+    rest-address: ${CAMUNDA_REST_ADDRESS:http://localhost:8080}
 
 resilience4j:
   retry:

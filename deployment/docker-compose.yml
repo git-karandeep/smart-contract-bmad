@@ -1,164 +1,202 @@
-version: '3.8'
+name: smart-contracts
 
 services:
-  # MongoDB with replica set
   mongodb:
-    image: mongo:7.0
-    container_name: smart-contracts-mongodb
+    image: mongo:7.0.17
     ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin
-      MONGO_INITDB_DATABASE: general-contracts
+      - "127.0.0.1:${MONGODB_HOST_PORT:-27017}:27017"
     volumes:
       - mongodb_data:/data/db
-      - ./deployment/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    command: mongod --replSet rs0 --bind_ip_all
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
+      test: ["CMD", "mongosh", "--quiet", "mongodb://127.0.0.1:27017/admin", "--eval", "db.runCommand({ping: 1}).ok"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-    networks:
-      - smart-contracts-network
+      retries: 20
+    networks: [smart-contracts]
 
-  # MongoDB replica set initialization
   mongodb-setup:
-    image: mongo:7.0
-    container_name: smart-contracts-mongodb-setup
+    image: mongo:7.0.17
     depends_on:
       mongodb:
         condition: service_healthy
     volumes:
-      - ./deployment/init-replica-set.sh:/init-replica-set.sh:ro
-    command: /init-replica-set.sh
-    networks:
-      - smart-contracts-network
+      - ./init-replica-set.sh:/init-replica-set.sh:ro
+    entrypoint: ["/bin/bash", "/init-replica-set.sh"]
+    restart: "no"
+    networks: [smart-contracts]
 
-  # Elasticsearch for Camunda
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
-    container_name: smart-contracts-elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ports:
-      - "9200:9200"
-      - "9300:9300"
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.9.0
     volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
     healthcheck:
-      test: curl -f http://localhost:9200/_cluster/health || exit 1
+      test: ["CMD", "bash", "-c", "cub zk-ready zookeeper:2181 10"]
       interval: 10s
       timeout: 5s
       retries: 10
-    networks:
-      - smart-contracts-network
+    networks: [smart-contracts]
 
-  # Camunda Zeebe
+  kafka:
+    image: confluentinc/cp-kafka:7.9.0
+    ports:
+      - "127.0.0.1:${KAFKA_HOST_PORT:-9092}:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:${KAFKA_HOST_PORT:-9092}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "bash", "-c", "cub kafka-ready -b localhost:29092 1 20"]
+      interval: 10s
+      timeout: 25s
+      retries: 10
+    networks: [smart-contracts]
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    ports:
+      - "127.0.0.1:${KAFKA_UI_HOST_PORT:-8084}:8080"
+    environment:
+      DYNAMIC_CONFIG_ENABLED: "false"
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks: [smart-contracts]
+
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:v1.3.1
+    ports:
+      - "127.0.0.1:${ANVIL_HOST_PORT:-8545}:8545"
+    entrypoint: ["anvil"]
+    command: ["--host", "0.0.0.0", "--port", "8545", "--chain-id", "31337", "--accounts", "10", "--balance", "10000", "--block-time", "12"]
+    healthcheck:
+      test: ["CMD", "cast", "chain-id", "--rpc-url", "http://127.0.0.1:8545"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [smart-contracts]
+
+  app:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    ports:
+      - "127.0.0.1:${APP_HOST_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SERVER_PORT: 8080
+      SERVER_ADDRESS: 0.0.0.0
+      MONGODB_URI: mongodb://mongodb:27017/general-contracts?replicaSet=rs0
+      MONGODB_DATABASE: general-contracts
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      APP_MESSAGING_ENABLED: "true"
+      CHAIN_RPC_URL: http://anvil:8545
+      CHAIN_ID: 31337
+      SIGNER_MODE: local-dev-only
+      APP_SECURITY_USERNAME: ${APP_SECURITY_USERNAME:-local-dev}
+      APP_SECURITY_PASSWORD: ${APP_SECURITY_PASSWORD:-local-dev-only}
+      CAMUNDA_GRPC_ADDRESS: http://zeebe:26500
+      CAMUNDA_REST_ADDRESS: http://zeebe:8080
+    depends_on:
+      mongodb-setup:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
+      anvil:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    networks: [smart-contracts]
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    profiles: [workflow]
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    networks: [smart-contracts]
+
   zeebe:
     image: camunda/zeebe:8.9.0
-    container_name: smart-contracts-zeebe
+    profiles: [workflow]
     depends_on:
       elasticsearch:
         condition: service_healthy
     ports:
-      - "26500:26500"
-      - "9600:9600"
+      - "127.0.0.1:26500:26500"
+      - "127.0.0.1:9600:9600"
     environment:
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX=zeebe-record
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
+      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
+      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL: http://elasticsearch:9200
+      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX: zeebe-record
+      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE: 1
     volumes:
       - zeebe_data:/usr/local/zeebe/data
-    networks:
-      - smart-contracts-network
+    networks: [smart-contracts]
 
-  # Camunda Operate
   operate:
     image: camunda/operate:8.9.0
-    container_name: smart-contracts-operate
-    depends_on:
-      - zeebe
-      - elasticsearch
+    profiles: [workflow]
+    depends_on: [zeebe, elasticsearch]
     ports:
-      - "8081:8080"
+      - "127.0.0.1:8081:8080"
     environment:
-      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
-      - CAMUNDA_OPERATE_ELASTSEARCH_URL=http://elasticsearch:9200
-      - CAMUNDA_OPERATE_ELASTSEARCH_INDEX_PREFIX=zeebe-record
-    networks:
-      - smart-contracts-network
+      CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS: zeebe:26500
+      CAMUNDA_OPERATE_ELASTSEARCH_URL: http://elasticsearch:9200
+      CAMUNDA_OPERATE_ELASTSEARCH_INDEX_PREFIX: zeebe-record
+    networks: [smart-contracts]
 
-  # Camunda Tasklist
   tasklist:
     image: camunda/tasklist:8.9.0
-    container_name: smart-contracts-tasklist
-    depends_on:
-      - zeebe
-      - elasticsearch
+    profiles: [workflow]
+    depends_on: [zeebe, elasticsearch]
     ports:
-      - "8082:8080"
+      - "127.0.0.1:8082:8080"
     environment:
-      - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
-      - CAMUNDA_TASKLIST_ELASTSEARCH_URL=http://elasticsearch:9200
-    networks:
-      - smart-contracts-network
-
-  # Kafka
-  kafka:
-    image: confluentinc/cp-kafka:7.6.0
-    container_name: smart-contracts-kafka
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    depends_on:
-      - zookeeper
-    volumes:
-      - kafka_data:/var/lib/kafka/data
-    networks:
-      - smart-contracts-network
-
-  # Zookeeper required by Kafka
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
-    container_name: smart-contracts-zookeeper
-    ports:
-      - "2181:2181"
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-    volumes:
-      - zookeeper_data:/var/lib/zookeeper/data
-      - zookeeper_log:/var/lib/zookeeper/log
-    networks:
-      - smart-contracts-network
-
-  # Anvil (local Ethereum node for development)
-  anvil:
-    image: ghcr.io/foundry-rs/foundry:latest
-    container_name: smart-contracts-anvil
-    ports:
-      - "8545:8545"
-    command: anvil --host 0.0.0.0 --port 8545 --chain-id 31337 --block-time 12
-    networks:
-      - smart-contracts-network
+      CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS: zeebe:26500
+      CAMUNDA_TASKLIST_ELASTSEARCH_URL: http://elasticsearch:9200
+    networks: [smart-contracts]
 
 volumes:
   mongodb_data:
-  elasticsearch_data:
-  zeebe_data:
   kafka_data:
   zookeeper_data:
   zookeeper_log:
+  elasticsearch_data:
+  zeebe_data:
 
 networks:
-  smart-contracts-network:
+  smart-contracts:
     driver: bridge
