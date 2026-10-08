@@ -3,6 +3,8 @@ plugins {
 	id 'org.springframework.boot' version '4.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
+def javaVersion = 21
+
 allprojects {
 	group = 'ai.generalcontracts'
 	version = '1.0.0-SNAPSHOT'
@@ -30,6 +32,12 @@ subprojects {
 	apply plugin: 'java' // e.g., Every child module is a Java project
 	apply plugin: 'org.springframework.boot'
 	apply plugin: 'io.spring.dependency-management'
+
+	java {
+		toolchain {
+			languageVersion = JavaLanguageVersion.of(javaVersion)
+		}
+	}
 
 	// Disable bootJar for library modules
 	bootJar {
@@ -72,7 +80,7 @@ subprojects {
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion = JavaLanguageVersion.of(javaVersion)
 	}
 }
 
