@@ -12,6 +12,8 @@ chain:
 spring:
   application:
     name: smart-contracts-startup
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   security:
     user:
       name: user
@@ -37,7 +39,18 @@ spring:
       invalid-hostname-allowed: true
       certificate: classpath:certificate/X509-cert-6796554876012674240.pem
 server:
-  port: 8443
+  port: ${SERVER_PORT:8443}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
 
 kafka:
     bootstrap-servers: localhost:9092
@@ -80,4 +93,3 @@ resilience4j:
         wait-duration-in-open-state: 10000
         sliding-window-size: 10
         sliding-window-type: count-based
-
