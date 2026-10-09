@@ -51,10 +51,10 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `modules/contracts/src/main/resources/application.yaml` and `application-{local,test,prod}.yaml` — split common/profile-specific configuration; externalize DB credentials, connection URI, chain signer references, and other sensitive settings through environment-backed properties.
-- [ ] `modules/contracts/src/test/java/ai/generalcontracts/startup/` — test local/test profile loading, production secret absence/required values, environment override precedence, and isolated application startup.
-- [ ] `modules/contracts/src/main/java/ai/generalcontracts/startup/config/` — update configuration binding only as needed so profiles preserve Mongo URI, TLS, and credential behavior without defaults that connect to a remote service.
-- [ ] `README.md` — document profile selection and required environment variables without using real credentials.
+- [x] `modules/contracts/src/main/resources/application.yaml` and `application-{local,test,prod}.yaml` — split common/profile-specific configuration; externalize DB credentials, connection URI, chain signer references, and other sensitive settings through environment-backed properties.
+- [x] `modules/contracts/src/test/java/ai/generalcontracts/startup/` — test local/test profile loading, production secret absence/required values, environment override precedence, and isolated application startup.
+- [x] `modules/contracts/src/main/java/ai/generalcontracts/startup/config/` — update configuration binding only as needed so profiles preserve Mongo URI, TLS, and credential behavior without defaults that connect to a remote service.
+- [x] `README.md` — document profile selection and required environment variables without using real credentials.
 
 **Acceptance Criteria:**
 
