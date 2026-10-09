@@ -4,7 +4,7 @@ set -euo pipefail
 compose=(docker compose -p "smart-contracts-e2e-${BASHPID:-$$}-${RANDOM}" -f deployment/docker-compose.yml)
 app_user="${APP_SECURITY_USERNAME:-local-dev}"
 app_password="${APP_SECURITY_PASSWORD:-local-dev-only}"
-export APP_HOST_PORT="${APP_HOST_PORT:-28080}"
+export APP_HOST_PORT="${APP_HOST_PORT:-28443}"
 export MONGODB_HOST_PORT="${MONGODB_HOST_PORT:-28017}"
 export KAFKA_HOST_PORT="${KAFKA_HOST_PORT:-29092}"
 export KAFKA_UI_HOST_PORT="${KAFKA_UI_HOST_PORT:-28084}"
@@ -15,6 +15,12 @@ cleanup() {
   "${compose[@]}" down --volumes --remove-orphans
 }
 trap cleanup EXIT
+
+services="$("${compose[@]}" config --services)"
+if grep -Fxq "zookeeper" <<<"$services"; then
+  echo "The local Compose stack must not include ZooKeeper" >&2
+  exit 1
+fi
 
 "${compose[@]}" up --build -d
 
@@ -29,6 +35,9 @@ for attempt in $(seq 1 90); do
   fi
   sleep 5
 done
+
+quorum_status="$("${compose[@]}" exec -T kafka kafka-metadata-quorum --bootstrap-server kafka:29092 describe --status)"
+grep -Eq '^LeaderId:[[:space:]]*1$' <<<"$quorum_status"
 
 chain_status="$(curl --fail --silent --user "$app_user:$app_password" "http://127.0.0.1:${APP_HOST_PORT}/api/chain/status")"
 [[ "$chain_status" == *'"chainId":31337'* ]]

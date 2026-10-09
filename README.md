@@ -490,14 +490,14 @@ docker compose -f deployment/docker-compose.yml up --build -d
 docker compose -f deployment/docker-compose.yml ps
 ```
 
-The default stack contains the application, replica-set MongoDB, Kafka, Kafka UI, and Anvil. Camunda/Elasticsearch services are opt-in with `--profile workflow`. Published ports bind to loopback. Kafka UI is at `http://localhost:8084`.
+The default stack contains the application, replica-set MongoDB, Kafka, Kafka UI, and Anvil. Local Kafka runs as a single-node KRaft cluster without ZooKeeper and stores broker data in the `kafka_kraft_data` volume. Existing Kafka/ZooKeeper-era volumes are not reused, migrated, or automatically deleted. Camunda/Elasticsearch services are opt-in with `--profile workflow`. Published ports bind to loopback. Kafka UI is at `http://localhost:8084`.
 
 ### Database
 
 MongoDB runs as a single-node `rs0` replica set. On application startup, the versioned Mongo initializer creates the `processed_events`, `outbox`, and `projection_checkpoints` infrastructure collections, the initial `transaction`, `blockchain_transaction`, `wallet`, `asset`, `token`, and `audit_event` collections, and required indexes. Initialization is idempotent and fails startup with a sanitized error if the database is unavailable.
 
 ```bash
-curl -fsS -u local-dev:local-dev-only http://localhost:8080/actuator/health
+curl -fsS -u local-dev:local-dev-only http://localhost:8443/actuator/health
 docker compose -f deployment/docker-compose.yml exec mongodb mongosh --quiet \
   "mongodb://mongodb:27017/general-contracts?replicaSet=rs0" \
   --eval 'db.getCollectionNames()'
@@ -520,7 +520,7 @@ Anvil listens on `http://localhost:8545`, uses chain ID `31337`, pre-funds devel
 curl -s -X POST http://localhost:8545 \
   -H 'Content-Type: application/json' \
   -d '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'
-curl -fsS -u local-dev:local-dev-only http://localhost:8080/api/chain/status
+curl -fsS -u local-dev:local-dev-only http://localhost:8443/api/chain/status
 ```
 
 Anvil keys and balances are public test fixtures. Never use them for real funds.
@@ -563,7 +563,7 @@ bash tests/e2e-smoke.sh
 docker compose -f deployment/docker-compose.yml down
 ```
 
-The smoke test requires Docker, Node.js/npm (`npm ci`), Bash, and `curl`; it builds and starts an isolated stack, checks app/Mongo/Kafka/Anvil, deploys the sample contract, sends an event through Kafka, and removes its own test containers and volumes on exit. The normal local Compose stack retains named data volumes across `down`; remove those local database volumes only when intentionally resetting local data with `docker compose -f deployment/docker-compose.yml down -v`. CI builds, scans, and uploads an application image archive; production deployment is not automated by this repository.
+The smoke test requires Docker, Node.js/npm (`npm ci`), Bash, and `curl`; it builds and starts an isolated stack, verifies KRaft quorum readiness and the absence of ZooKeeper, checks app/Mongo/Kafka/Anvil, deploys the sample contract, sends an event through Kafka, and removes only its own test containers and volumes on exit. The normal local Compose stack retains named data volumes across `down`; use `docker compose -f deployment/docker-compose.yml down -v` only when intentionally deleting volumes used by that stack. ZooKeeper-era volumes are unreferenced by the new stack and are not automatically removed; inspect them and manually remove only specific legacy volumes if you choose to reclaim that space. CI builds, scans, and uploads an application image archive; production deployment is not automated by this repository.
 
 ### Deployment
 

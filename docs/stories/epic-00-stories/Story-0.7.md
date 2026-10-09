@@ -11,9 +11,7 @@ compliance.events
 settlement.events
 blockchain.events
 Acceptance Criteria
-Kafka starts locally
-Application connects to Kafka
-Producer works
-Consumer works
-Serialization is configured
-Failed messages can be logged/retried
+- Kafka starts locally in single-node KRaft mode with no ZooKeeper service.
+- Application connects using the existing bootstrap-server contract.
+- Producer and consumer behavior, serialization, topics, and failed-message logging/retry remain unchanged.
+- KRaft uses a new persistent volume; existing Kafka and ZooKeeper-era volumes are left untouched and are not migrated or automatically deleted.

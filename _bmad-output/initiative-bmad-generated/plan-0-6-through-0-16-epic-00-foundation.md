@@ -48,7 +48,7 @@ context:
 
 - `modules/contracts/src/main/resources/application*.yaml` and `modules/contracts/src/main/java/ai/generalcontracts/startup/config/` — current Spring profiles and Mongo client configuration from Story 0.5; preserve and extend these.
 - `modules/persistence-mongo/`, `modules/chain-adapter/`, `modules/chain-listener/`, `modules/common-observability/`, `modules/app-bootstrap/` — intended integration modules; mostly placeholders.
-- `deployment/docker-compose.yml`, `deployment/mongo-init.js`, `deployment/init-replica-set.sh` — Mongo replica set, Kafka/Zookeeper, Zeebe/Elasticsearch, Anvil; inspect/fix relative mounts and add required UI/readiness.
+- `deployment/docker-compose.yml`, `deployment/mongo-init.js`, `deployment/init-replica-set.sh` — Mongo replica set, Kafka/kraft, Zeebe/Elasticsearch, Anvil; inspect/fix relative mounts and add required UI/readiness.
 - `modules/solidity-contract/src/main/solidity/` — existing five contracts; no configured compiler/test/deployment project.
 - `gradle/libs.versions.toml`, `build.gradle`, `modules/*/build.gradle.kts`, `settings.gradle.kts` — Java 21 multi-module build; dependencies currently inherited broadly.
 - `.github/workflows/ci.yml` — existing GitHub Actions Gradle check; add required tests/scans/artifacts and supported branch triggers.

@@ -126,6 +126,8 @@ flowchart LR
 | Packaging/Deploy | Docker, Helm, Kubernetes | |
 | Secrets/Keys | Vault / cloud KMS / HSM | |
 
+The local Compose Kafka broker runs as a single-node KRaft cluster; the application connects through bootstrap servers. This local choice does not constrain external Kafka deployments.
+
 ---
 
 ## 4. Repository and Gradle Structure (BMAD `source-tree.md` shard)
@@ -419,7 +421,7 @@ Coding standards: constructor injection only, no business logic in controllers/w
 `local` (docker-compose) → `dev` → `test` → `prod`; testnet or private chain for non-prod, mainnet/consortium chain for prod.
 
 ### 11.2 Local `docker-compose` services
-Zeebe (+ Operate/Tasklist), Elasticsearch/OpenSearch, MongoDB (single-node replica set), Anvil or Besu, optional Kafka, Prometheus/Grafana.
+Zeebe (+ Operate/Tasklist), Elasticsearch/OpenSearch, MongoDB (single-node replica set), Anvil or Besu, optional Kafka (single-node KRaft in the local Compose stack; no ZooKeeper), Prometheus/Grafana.
 
 ### 11.3 Kubernetes topology
 - `app` deployment(s): api, workers, listener (scale independently; **listener runs as single active instance** with leader election).

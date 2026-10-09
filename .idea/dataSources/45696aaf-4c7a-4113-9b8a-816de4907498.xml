@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataSource name="@contract-cluster0.a9whvtn.mongodb.net">
+  <database-model serializer="dbm" dbms="MONGO" family-id="MONGO" format-version="4.55">
+    <root id="1">
+      <ServerVersion>8.0.34</ServerVersion>
+    </root>
+    <schema id="2" parent="1" name="admin"/>
+    <schema id="3" parent="1" name="general-contracts">
+      <LastIntrospectionLocalTimestamp>2026-10-08.20:22:03</LastIntrospectionLocalTimestamp>
+    </schema>
+    <schema id="4" parent="1" name="local"/>
+    <table id="5" parent="3" name="orders"/>
+    <column id="6" parent="5" name="_id">
+      <Position>1</Position>
+      <StoredType>String|12s</StoredType>
+    </column>
+    <column id="7" parent="5" name="_class">
+      <Position>2</Position>
+      <StoredType>String|12s</StoredType>
+    </column>
+    <column id="8" parent="5" name="amount">
+      <Position>3</Position>
+      <StoredType>Double|8s</StoredType>
+    </column>
+    <column id="9" parent="5" name="customer">
+      <Position>4</Position>
+      <StoredType>String|12s</StoredType>
+    </column>
+    <column id="10" parent="5" name="status">
+      <Position>5</Position>
+      <StoredType>String|12s</StoredType>
+    </column>
+    <index id="11" parent="5" name="_id_">
+      <ColNames>_id</ColNames>
+      <Unique>1</Unique>
+    </index>
+  </database-model>
+</dataSource>

@@ -15,8 +15,8 @@ Run from the repository root:
 | REST API validation | `.\gradlew.bat apiTest` or `./gradlew apiTest` | JDK 21; no external services |
 | Contract compile and tests | `npm ci && npm run contracts:compile && npm run contracts:test` | Node.js 22; internet access on first compiler download |
 | Solidity static checks | `npm run contracts:lint` | Node.js dependencies from `npm ci` |
-| End-to-end stack smoke | `bash tests/e2e-smoke.sh` | Docker Compose, Node.js 22/npm, Bash, and curl; builds the sample contract and starts MongoDB, Kafka, Anvil, and the app |
+| End-to-end stack smoke | `bash tests/e2e-smoke.sh` | Docker Compose, Node.js 22/npm, Bash, and curl; builds the sample contract and starts MongoDB, single-node KRaft Kafka (no ZooKeeper), Anvil, and the app |
 
-`.\gradlew.bat check` / `./gradlew check` runs the default Gradle verification tasks. The end-to-end script uses its own Compose project and removes its containers and volumes on exit. The normal local Compose stack keeps its named volumes; use `docker compose -f deployment/docker-compose.yml down -v` only when intentionally deleting local data.
+`.\gradlew.bat check` / `./gradlew check` runs the default Gradle verification tasks. The end-to-end script uses its own Compose project and removes its containers and volumes on exit. The normal local Compose stack keeps its named volumes; use `docker compose -f deployment/docker-compose.yml down -v` only when intentionally deleting volumes used by that stack. ZooKeeper-era volumes are unreferenced and are not migrated or automatically removed.
 
 Workflow execution, full business-flow API tests, reorg/chaos tests, and contract fuzz/invariant tests have not been implemented by this foundation and are not implied by these commands.

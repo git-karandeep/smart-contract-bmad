@@ -1,31 +1,5 @@
 <DataSourcesHistory>
   <DataSourceFromHistory isRemovedFromProject="true">
-    <data-source source="LOCAL" name="mongodb+srv://connect2dockernet_db_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts [DEBUG]" group="​GeneralContractApplication" uuid="42a74508-6acd-4aed-a7b6-d88da2075519">
-      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MONGO" />
-      <driver-ref>mongo.4</driver-ref>
-      <synchronize>true</synchronize>
-      <imported>true</imported>
-      <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
-      <jdbc-url>mongodb+srv://connect2dockernet_db_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts</jdbc-url>
-      <user-name>connect2dockernet_db_user</user-name>
-      <schema-mapping />
-      <working-dir>$ProjectFileDir$</working-dir>
-    </data-source>
-  </DataSourceFromHistory>
-  <DataSourceFromHistory isRemovedFromProject="true">
-    <data-source source="LOCAL" name="mongodb+srv://connect2dockernet_db_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts [DEBUG]" group="​GeneralContractApplication" uuid="1b0a53e7-b484-49be-a0e4-3e00b4321bb6">
-      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MONGO" />
-      <driver-ref>mongo.4</driver-ref>
-      <synchronize>true</synchronize>
-      <imported>true</imported>
-      <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
-      <jdbc-url>mongodb+srv://connect2dockernet_db_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts</jdbc-url>
-      <user-name>connect2dockernet_db_user</user-name>
-      <schema-mapping />
-      <working-dir>$ProjectFileDir$</working-dir>
-    </data-source>
-  </DataSourceFromHistory>
-  <DataSourceFromHistory isRemovedFromProject="true">
     <data-source source="LOCAL" name="mongodb+srv://connect2dockernet_db_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts [DEBUG]" group="​GeneralContractApplication" uuid="0d14e653-d87c-4160-ad4d-c4b91fd4aaef">
       <database-info product="Mongo DB" version="8.0.34" jdbc-version="4.2" driver-name="MongoDB JDBC Driver" driver-version="1.24" dbms="MONGO" exact-version="8.0.34" exact-driver-version="1.24" />
       <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
@@ -270,6 +244,154 @@
       <jdbc-url>mongodb+srv://connect2dockernet_tls_user:connect2dockernet@contract-cluster0.a9whvtn.mongodb.net/general-contracts?tls=true</jdbc-url>
       <user-name>connect2dockernet_tls_user</user-name>
       <schema-mapping />
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+  </DataSourceFromHistory>
+  <DataSourceFromHistory isRemovedFromProject="true">
+    <data-source source="LOCAL" name="mongodb://localhost/general-contracts [DEBUG]" group="​GeneralContractApplication" uuid="748aad30-2663-4318-a4da-12bb6c300bbd">
+      <database-info product="Mongo DB" version="8.3.4" jdbc-version="4.2" driver-name="MongoDB JDBC Driver" driver-version="1.24" dbms="MONGO" exact-version="8.3.4" exact-driver-version="1.24" />
+      <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
+      <driver-ref>mongo.4</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
+      <jdbc-url>mongodb://localhost/general-contracts</jdbc-url>
+      <auth-provider>no-auth</auth-provider>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" qname="@" />
+        </introspection-scope>
+      </schema-mapping>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+  </DataSourceFromHistory>
+  <DataSourceFromHistory isRemovedFromProject="true">
+    <data-source source="LOCAL" name="mongodb://localhost/general-contracts [DEBUG]" group="​GeneralContractApplication" uuid="e2a109af-f8bf-4971-9711-5a21a2a5f279">
+      <database-info product="Mongo DB" version="8.3.4" jdbc-version="4.2" driver-name="MongoDB JDBC Driver" driver-version="1.24" dbms="MONGO" exact-version="8.3.4" exact-driver-version="1.24" />
+      <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
+      <driver-ref>mongo.4</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
+      <jdbc-url>mongodb://localhost/general-contracts</jdbc-url>
+      <auth-provider>no-auth</auth-provider>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" qname="@" />
+        </introspection-scope>
+      </schema-mapping>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+  </DataSourceFromHistory>
+  <DataSourceFromHistory isRemovedFromProject="true">
+    <data-source source="LOCAL" name="mongodb://localhost/general-contracts [DEBUG]" group="​GeneralContractApplication" uuid="678daa31-3c1d-4f1f-ab4f-18f709c29f0b">
+      <database-info product="Mongo DB" version="8.3.4" jdbc-version="4.2" driver-name="MongoDB JDBC Driver" driver-version="1.24" dbms="MONGO" exact-version="8.3.4" exact-driver-version="1.24" />
+      <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
+      <driver-ref>mongo.4</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
+      <jdbc-url>mongodb://localhost/general-contracts</jdbc-url>
+      <auth-provider>no-auth</auth-provider>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" qname="@" />
+        </introspection-scope>
+      </schema-mapping>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+  </DataSourceFromHistory>
+  <DataSourceFromHistory isRemovedFromProject="true">
+    <data-source source="LOCAL" name="mongodb://localhost/general-contracts [DEBUG]" group="​GeneralContractApplication" uuid="2758e7c1-1793-4f1a-b25b-f4935e38827d">
+      <database-info product="Mongo DB" version="8.3.4" jdbc-version="4.2" driver-name="MongoDB JDBC Driver" driver-version="1.24" dbms="MONGO" exact-version="8.3.4" exact-driver-version="1.24" />
+      <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
+      <driver-ref>mongo.4</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
+      <jdbc-url>mongodb://localhost/general-contracts</jdbc-url>
+      <auth-provider>no-auth</auth-provider>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" qname="@" />
+        </introspection-scope>
+      </schema-mapping>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+  </DataSourceFromHistory>
+  <DataSourceFromHistory isRemovedFromProject="false">
+    <data-source source="LOCAL" name="@contract-cluster0.a9whvtn.mongodb.net" uuid="45696aaf-4c7a-4113-9b8a-816de4907498">
+      <database-info product="Mongo DB" version="8.0.34" jdbc-version="4.2" driver-name="MongoDB JDBC Driver" driver-version="1.24" dbms="MONGO" exact-version="8.0.34" exact-driver-version="1.24" />
+      <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
+      <driver-ref>mongo.4</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <remarks>D:/git-repo/smart-contracts-bmad/modules/contracts/src/main/resources/application-test.yaml</remarks>
+      <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
+      <jdbc-url>mongodb+srv://contract-cluster0.a9whvtn.mongodb.net/?appName=contract-Cluster0</jdbc-url>
+      <jdbc-additional-properties>
+        <property name="com.intellij.clouds.kubernetes.db.host.port" />
+        <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
+        <property name="com.intellij.clouds.kubernetes.db.container.port" />
+      </jdbc-additional-properties>
+      <user-name>connect2dockernet_db_user</user-name>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" qname="general-contracts" />
+        </introspection-scope>
+      </schema-mapping>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+  </DataSourceFromHistory>
+  <DataSourceFromHistory isRemovedFromProject="false">
+    <data-source source="LOCAL" name="general-contracts@localhost" uuid="ed4195cc-c9d9-4514-bdec-c3e9f0c88e63">
+      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MONGO" />
+      <driver-ref>mongo.4</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <remarks>D:/git-repo/smart-contracts-bmad/modules/contracts/src/main/resources/application-local.yaml</remarks>
+      <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
+      <jdbc-url>mongodb+srv://localhost/general-contracts?replicaSet=rs0</jdbc-url>
+      <jdbc-additional-properties>
+        <property name="com.intellij.clouds.kubernetes.db.host.port" />
+        <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
+        <property name="com.intellij.clouds.kubernetes.db.container.port" />
+      </jdbc-additional-properties>
+      <schema-mapping />
+      <working-dir>$ProjectFileDir$</working-dir>
+      <ssh-properties>
+        <enabled>true</enabled>
+      </ssh-properties>
+    </data-source>
+  </DataSourceFromHistory>
+  <DataSourceFromHistory isRemovedFromProject="true">
+    <data-source source="LOCAL" name="general-contracts@localhost [2]" uuid="a5bdaa14-f052-44ad-8cc2-3d6d83cd9198">
+      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MONGO" />
+      <driver-ref>mongo.4</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <remarks>D:/git-repo/smart-contracts-bmad/modules/contracts/src/main/resources/application-prod.yaml</remarks>
+      <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
+      <jdbc-url>mongodb://localhost:27017/general-contracts</jdbc-url>
+      <schema-mapping />
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+  </DataSourceFromHistory>
+  <DataSourceFromHistory isRemovedFromProject="false">
+    <data-source source="LOCAL" name="mongodb://localhost/general-contracts [DEBUG]" group="​GeneralContractApplication" uuid="1fad739b-eb0d-4822-9674-a8183a2df9e8">
+      <database-info product="Mongo DB" version="8.3.4" jdbc-version="4.2" driver-name="MongoDB JDBC Driver" driver-version="1.24" dbms="MONGO" exact-version="8.3.4" exact-driver-version="1.24" />
+      <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
+      <driver-ref>mongo.4</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <jdbc-driver>com.dbschema.MongoJdbcDriver</jdbc-driver>
+      <jdbc-url>mongodb://localhost/general-contracts</jdbc-url>
+      <auth-provider>no-auth</auth-provider>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" qname="@" />
+        </introspection-scope>
+      </schema-mapping>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </DataSourceFromHistory>

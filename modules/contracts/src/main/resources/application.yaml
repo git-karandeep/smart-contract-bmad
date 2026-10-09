@@ -47,7 +47,7 @@ spring:
       certificate: ${MONGODB_SSL_CERTIFICATE:}
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:8443}
   shutdown: graceful
 
 management:

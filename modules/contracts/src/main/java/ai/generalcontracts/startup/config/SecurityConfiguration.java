@@ -18,10 +18,10 @@ public class SecurityConfiguration {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()
             )
             .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
-            .httpBasic(org.springframework.security.config.Customizer.withDefaults());
+            .httpBasic(org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer::disable);
 
         return http.build();
     }
