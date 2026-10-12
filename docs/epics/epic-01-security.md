@@ -196,3 +196,5 @@ The epic is complete when:
 * Security-sensitive events are auditable without leaking secrets.
 * Automated unit and integration tests cover positive and negative authorization paths.
 * Security configuration and operational procedures are documented.
+
+

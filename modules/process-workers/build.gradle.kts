@@ -10,8 +10,15 @@ repositories {
 }
 
 dependencies {
+    implementation(project(":modules:common-domain"))
+    implementation(project(":modules:chain-adapter"))
+    implementation(project(":modules:chain-listener"))
+    implementation(project(":modules:domain-service"))
+    implementation(project(":modules:persistence-mongo"))
+    testImplementation(project(":modules:process-definitions"))
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.mockito:mockito-junit-jupiter")
 }
 
 tasks.test {

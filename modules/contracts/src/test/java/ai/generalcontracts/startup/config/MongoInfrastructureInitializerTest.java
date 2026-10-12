@@ -22,6 +22,9 @@ class MongoInfrastructureInitializerTest {
     @Test
     void surfacesDatabaseFailureWithoutIncludingConnectionDetails() {
         MongoTemplate mongoTemplate = org.mockito.Mockito.mock(MongoTemplate.class);
+        IndexOperations indexOperations = mock(IndexOperations.class);
+        when(mongoTemplate.collectionExists(anyString())).thenReturn(true);
+        when(mongoTemplate.indexOps(anyString())).thenReturn(indexOperations);
         when(mongoTemplate.collectionExists("processed_events"))
             .thenThrow(new MongoTimeoutException("mongodb://user:secret@example.invalid"));
 
@@ -52,10 +55,14 @@ class MongoInfrastructureInitializerTest {
 
         org.mockito.ArgumentCaptor<IndexDefinition> indexes =
             org.mockito.ArgumentCaptor.forClass(IndexDefinition.class);
-        verify(indexOperations, org.mockito.Mockito.times(3)).createIndex(indexes.capture());
+        verify(indexOperations, org.mockito.Mockito.times(10)).createIndex(indexes.capture());
         assertIndex(indexes.getAllValues(), "eventId", true);
-        assertIndex(indexes.getAllValues(), "messageId", true);
+        assertNamedIndex(indexes.getAllValues(), "provider_message_unique", "messageId", true);
+        assertNamedIndex(indexes.getAllValues(), "screening_request_result_unique", "requestId", true);
         assertIndex(indexes.getAllValues(), "publishedAt", false);
+        assertIndex(indexes.getAllValues(), "idempotencyKey", true);
+        assertIndex(indexes.getAllValues(), "occurredAt", false);
+        assertIndex(indexes.getAllValues(), "transactionHash", true);
     }
 
     @Test
@@ -71,6 +78,11 @@ class MongoInfrastructureInitializerTest {
 
         for (String collection : java.util.List.of(
             "schema_migrations",
+            "transfer_instructions",
+            "transfer_audit",
+            "screening_requests",
+            "screening_results",
+            "transfer_submissions",
             "transaction",
             "blockchain_transaction",
             "wallet",
@@ -88,7 +100,10 @@ class MongoInfrastructureInitializerTest {
     @Test
     void acceptsCollectionsCreatedByAnotherApplicationInstance() {
         MongoTemplate mongoTemplate = mock(MongoTemplate.class);
+        IndexOperations indexOperations = mock(IndexOperations.class);
+        when(mongoTemplate.collectionExists(anyString())).thenReturn(true);
         when(mongoTemplate.collectionExists("schema_migrations")).thenReturn(false, true);
+        when(mongoTemplate.indexOps(anyString())).thenReturn(indexOperations);
         when(mongoTemplate.exists(any(org.springframework.data.mongodb.core.query.Query.class), eq("schema_migrations")))
             .thenReturn(true);
         org.mockito.Mockito.doThrow(new DataAccessResourceFailureException("collection already exists"))
@@ -118,6 +133,19 @@ class MongoInfrastructureInitializerTest {
     private void assertIndex(java.util.List<IndexDefinition> indexes, String field, boolean unique) {
         assertThat(indexes)
             .filteredOn(index -> index.getIndexKeys().containsKey(field))
+            .singleElement()
+            .satisfies(index -> assertThat(Boolean.TRUE.equals(index.getIndexOptions().get("unique"))).isEqualTo(unique));
+    }
+
+    private void assertNamedIndex(
+        java.util.List<IndexDefinition> indexes,
+        String name,
+        String field,
+        boolean unique
+    ) {
+        assertThat(indexes)
+            .filteredOn(index -> index.getIndexKeys().containsKey(field))
+            .filteredOn(index -> name.equals(index.getIndexOptions().get("name")))
             .singleElement()
             .satisfies(index -> assertThat(Boolean.TRUE.equals(index.getIndexOptions().get("unique"))).isEqualTo(unique));
     }

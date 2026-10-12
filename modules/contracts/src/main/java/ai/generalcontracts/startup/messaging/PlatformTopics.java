@@ -19,6 +19,8 @@ public class PlatformTopics {
     public static final String TRANSFER_EVENTS = "transfer.events";
     public static final String COMPLIANCE_EVENTS = "compliance.events";
     public static final String BLOCKCHAIN_EVENTS = "blockchain.events";
+    public static final String SCREENING_REQUESTS = "compliance.screening.requests";
+    public static final String SCREENING_RESULTS = "compliance.screening.results";
 
     @Bean NewTopic chainEventsRawTopic() { return topic(CHAIN_EVENTS_RAW); }
     @Bean NewTopic chainTxSubmittedTopic() { return topic(CHAIN_TX_SUBMITTED); }
@@ -30,6 +32,8 @@ public class PlatformTopics {
     @Bean NewTopic transferEventsTopic() { return topic(TRANSFER_EVENTS); }
     @Bean NewTopic complianceEventsTopic() { return topic(COMPLIANCE_EVENTS); }
     @Bean NewTopic blockchainEventsTopic() { return topic(BLOCKCHAIN_EVENTS); }
+    @Bean NewTopic screeningRequestsTopic() { return topic(SCREENING_REQUESTS); }
+    @Bean NewTopic screeningResultsTopic() { return topic(SCREENING_RESULTS); }
     @Bean NewTopic chainEventsRawDltTopic() { return topic(CHAIN_EVENTS_RAW + ".dlt"); }
     @Bean NewTopic chainTxSubmittedDltTopic() { return topic(CHAIN_TX_SUBMITTED + ".dlt"); }
     @Bean NewTopic chainTxConfirmedDltTopic() { return topic(CHAIN_TX_CONFIRMED + ".dlt"); }

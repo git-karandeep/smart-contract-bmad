@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  id="transferDefinitions"
+                  name="Token transfer workflows"
+                  targetNamespace="https://generalcontracts.ai/workflows">
+  <bpmn:message id="transferInstructionMessage" name="TransferInstructionReceived">
+    <bpmn:extensionElements><zeebe:subscription correlationKey="=instructionId"/></bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="kycResultMessage" name="KycScreeningResult">
+    <bpmn:extensionElements><zeebe:subscription correlationKey="=kycCorrelationKey"/></bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="amlResultMessage" name="AmlScreeningResult">
+    <bpmn:extensionElements><zeebe:subscription correlationKey="=amlCorrelationKey"/></bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="sanctionsResultMessage" name="SanctionsScreeningResult">
+    <bpmn:extensionElements><zeebe:subscription correlationKey="=sanctionsCorrelationKey"/></bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="transactionResultMessage" name="TransferTransactionResult">
+    <bpmn:extensionElements><zeebe:subscription correlationKey="=instructionId"/></bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:process id="transfer-lifecycle" name="Token transfer lifecycle" isExecutable="true">
+    <bpmn:startEvent id="transferReceived" name="Transfer instruction received">
+      <bpmn:messageEventDefinition messageRef="transferInstructionMessage"/>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="validateTransfer" name="Validate transfer">
+      <bpmn:extensionElements><zeebe:taskDefinition type="transfer-validate" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="validationGateway" name="Instruction valid?" default="flowInvalid"/>
+    <bpmn:endEvent id="validationRejected" name="Validation failed"/>
+    <bpmn:parallelGateway id="screeningFork" name="Request mandatory screenings"/>
+    <bpmn:serviceTask id="requestKyc" name="Request KYC screening">
+      <bpmn:extensionElements><zeebe:taskDefinition type="screening-request-kyc" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="kycRequestGateway" name="KYC request published?" default="flowKycPolicyHold"/>
+    <bpmn:eventBasedGateway id="kycWait" name="Await KYC result or timeout"/>
+    <bpmn:intermediateCatchEvent id="kycResult" name="KYC result">
+      <bpmn:messageEventDefinition messageRef="kycResultMessage"/>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="kycTimeout" name="KYC timeout">
+      <bpmn:timerEventDefinition><bpmn:timeDuration>PT15M</bpmn:timeDuration></bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="kycTimeoutPersist" name="Persist KYC timeout hold">
+      <bpmn:extensionElements><zeebe:taskDefinition type="screening-timeout-kyc" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="kycPolicyHold" name="Persist missing KYC policy hold">
+      <bpmn:extensionElements><zeebe:taskDefinition type="screening-timeout-kyc" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="requestAml" name="Request AML screening">
+      <bpmn:extensionElements><zeebe:taskDefinition type="screening-request-aml" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="amlRequestGateway" name="AML request published?" default="flowAmlPolicyHold"/>
+    <bpmn:eventBasedGateway id="amlWait" name="Await AML result or timeout"/>
+    <bpmn:intermediateCatchEvent id="amlResult" name="AML result">
+      <bpmn:messageEventDefinition messageRef="amlResultMessage"/>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="amlTimeout" name="AML timeout">
+      <bpmn:timerEventDefinition><bpmn:timeDuration>PT15M</bpmn:timeDuration></bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="amlTimeoutPersist" name="Persist AML timeout hold">
+      <bpmn:extensionElements><zeebe:taskDefinition type="screening-timeout-aml" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="amlPolicyHold" name="Persist missing AML policy hold">
+      <bpmn:extensionElements><zeebe:taskDefinition type="screening-timeout-aml" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="requestSanctions" name="Request sanctions screening">
+      <bpmn:extensionElements><zeebe:taskDefinition type="screening-request-sanctions" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="sanctionsRequestGateway" name="Sanctions request published?"
+                           default="flowSanctionsPolicyHold"/>
+    <bpmn:eventBasedGateway id="sanctionsWait" name="Await sanctions result or timeout"/>
+    <bpmn:intermediateCatchEvent id="sanctionsResult" name="Sanctions result">
+      <bpmn:messageEventDefinition messageRef="sanctionsResultMessage"/>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="sanctionsTimeout" name="Sanctions timeout">
+      <bpmn:timerEventDefinition><bpmn:timeDuration>PT15M</bpmn:timeDuration></bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="sanctionsTimeoutPersist" name="Persist sanctions timeout hold">
+      <bpmn:extensionElements><zeebe:taskDefinition type="screening-timeout-sanctions" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="sanctionsPolicyHold" name="Persist missing sanctions policy hold">
+      <bpmn:extensionElements><zeebe:taskDefinition type="screening-timeout-sanctions" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:parallelGateway id="screeningJoin" name="All mandatory results received"/>
+    <bpmn:serviceTask id="aggregateCompliance" name="Aggregate compliance decisions">
+      <bpmn:extensionElements><zeebe:taskDefinition type="compliance-aggregate" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="complianceGateway" name="Compliance outcome" default="flowComplianceReject"/>
+    <bpmn:endEvent id="complianceRejected" name="Compliance rejected or held"/>
+    <bpmn:endEvent id="manualReview" name="Manual review required"/>
+    <bpmn:serviceTask id="revalidateTransfer" name="Revalidate immediately before execution">
+      <bpmn:extensionElements><zeebe:taskDefinition type="transfer-pre-execution-gate" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="executionGateway" name="Execution gate passed?" default="flowExecutionHeld"/>
+    <bpmn:endEvent id="executionHeld" name="Execution held"/>
+    <bpmn:serviceTask id="submitTransfer" name="Submit token transfer">
+      <bpmn:extensionElements><zeebe:taskDefinition type="transfer-submit" retries="1"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="submissionGateway" name="Submission acknowledged?" default="flowSubmissionUnknown"/>
+    <bpmn:endEvent id="submissionUnknown" name="Submission outcome unknown or rejected"/>
+    <bpmn:intermediateCatchEvent id="transactionResult" name="Await transaction result">
+      <bpmn:messageEventDefinition messageRef="transactionResultMessage"/>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="reconcileTransfer" name="Reconcile confirmed transfer">
+      <bpmn:extensionElements><zeebe:taskDefinition type="transfer-reconcile" retries="3"/></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="reconciliationGateway" name="Reconciliation matched?" default="flowReconciliationMismatch"/>
+    <bpmn:endEvent id="reconciliationHeld" name="Reconciliation mismatch"/>
+    <bpmn:endEvent id="transferCompleted" name="Transfer completed">
+      <bpmn:extensionElements><zeebe:ioMapping>
+        <zeebe:output source="=true" target="completionEmitted"/>
+      </zeebe:ioMapping></bpmn:extensionElements>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="flowStartValidate" sourceRef="transferReceived" targetRef="validateTransfer"/>
+    <bpmn:sequenceFlow id="flowValidateGateway" sourceRef="validateTransfer" targetRef="validationGateway"/>
+    <bpmn:sequenceFlow id="flowInvalid" sourceRef="validationGateway" targetRef="validationRejected">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=validationPassed = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowValid" sourceRef="validationGateway" targetRef="screeningFork">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=validationPassed = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowKycRequest" sourceRef="screeningFork" targetRef="requestKyc"/>
+    <bpmn:sequenceFlow id="flowAmlRequest" sourceRef="screeningFork" targetRef="requestAml"/>
+    <bpmn:sequenceFlow id="flowSanctionsRequest" sourceRef="screeningFork" targetRef="requestSanctions"/>
+    <bpmn:sequenceFlow id="flowKycRequestGateway" sourceRef="requestKyc" targetRef="kycRequestGateway"/>
+    <bpmn:sequenceFlow id="flowKycRequestPublished" sourceRef="kycRequestGateway" targetRef="kycWait">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=kycRequestReady = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowKycPolicyHold" sourceRef="kycRequestGateway" targetRef="kycPolicyHold">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=kycRequestReady = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowKycResult" sourceRef="kycWait" targetRef="kycResult"/>
+    <bpmn:sequenceFlow id="flowKycTimeout" sourceRef="kycWait" targetRef="kycTimeout"/>
+    <bpmn:sequenceFlow id="flowKycResultJoin" sourceRef="kycResult" targetRef="screeningJoin"/>
+    <bpmn:sequenceFlow id="flowKycTimeoutPersist" sourceRef="kycTimeout" targetRef="kycTimeoutPersist"/>
+    <bpmn:sequenceFlow id="flowKycTimeoutJoin" sourceRef="kycTimeoutPersist" targetRef="screeningJoin"/>
+    <bpmn:sequenceFlow id="flowKycPolicyHoldJoin" sourceRef="kycPolicyHold" targetRef="screeningJoin"/>
+    <bpmn:sequenceFlow id="flowAmlRequestGateway" sourceRef="requestAml" targetRef="amlRequestGateway"/>
+    <bpmn:sequenceFlow id="flowAmlRequestPublished" sourceRef="amlRequestGateway" targetRef="amlWait">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=amlRequestReady = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowAmlPolicyHold" sourceRef="amlRequestGateway" targetRef="amlPolicyHold">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=amlRequestReady = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowAmlResult" sourceRef="amlWait" targetRef="amlResult"/>
+    <bpmn:sequenceFlow id="flowAmlTimeout" sourceRef="amlWait" targetRef="amlTimeout"/>
+    <bpmn:sequenceFlow id="flowAmlResultJoin" sourceRef="amlResult" targetRef="screeningJoin"/>
+    <bpmn:sequenceFlow id="flowAmlTimeoutPersist" sourceRef="amlTimeout" targetRef="amlTimeoutPersist"/>
+    <bpmn:sequenceFlow id="flowAmlTimeoutJoin" sourceRef="amlTimeoutPersist" targetRef="screeningJoin"/>
+    <bpmn:sequenceFlow id="flowAmlPolicyHoldJoin" sourceRef="amlPolicyHold" targetRef="screeningJoin"/>
+    <bpmn:sequenceFlow id="flowSanctionsRequestGateway" sourceRef="requestSanctions" targetRef="sanctionsRequestGateway"/>
+    <bpmn:sequenceFlow id="flowSanctionsRequestPublished" sourceRef="sanctionsRequestGateway" targetRef="sanctionsWait">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=sanctionsRequestReady = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowSanctionsPolicyHold" sourceRef="sanctionsRequestGateway" targetRef="sanctionsPolicyHold">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=sanctionsRequestReady = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowSanctionsResult" sourceRef="sanctionsWait" targetRef="sanctionsResult"/>
+    <bpmn:sequenceFlow id="flowSanctionsTimeout" sourceRef="sanctionsWait" targetRef="sanctionsTimeout"/>
+    <bpmn:sequenceFlow id="flowSanctionsResultJoin" sourceRef="sanctionsResult" targetRef="screeningJoin"/>
+    <bpmn:sequenceFlow id="flowSanctionsTimeoutPersist" sourceRef="sanctionsTimeout" targetRef="sanctionsTimeoutPersist"/>
+    <bpmn:sequenceFlow id="flowSanctionsTimeoutJoin" sourceRef="sanctionsTimeoutPersist" targetRef="screeningJoin"/>
+    <bpmn:sequenceFlow id="flowSanctionsPolicyHoldJoin" sourceRef="sanctionsPolicyHold" targetRef="screeningJoin"/>
+    <bpmn:sequenceFlow id="flowJoinAggregate" sourceRef="screeningJoin" targetRef="aggregateCompliance"/>
+    <bpmn:sequenceFlow id="flowAggregateGateway" sourceRef="aggregateCompliance" targetRef="complianceGateway"/>
+    <bpmn:sequenceFlow id="flowComplianceReject" sourceRef="complianceGateway" targetRef="complianceRejected">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=complianceOutcome = "REJECTED" or complianceOutcome = "HOLD" or complianceOutcome = "RESTRICTED"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowComplianceReview" sourceRef="complianceGateway" targetRef="manualReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=complianceOutcome = "MANUAL_REVIEW"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowComplianceApproved" sourceRef="complianceGateway" targetRef="revalidateTransfer">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=complianceOutcome = "APPROVED"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowRevalidateGateway" sourceRef="revalidateTransfer" targetRef="executionGateway"/>
+    <bpmn:sequenceFlow id="flowExecutionHeld" sourceRef="executionGateway" targetRef="executionHeld">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=executionAllowed = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowExecutionAllowed" sourceRef="executionGateway" targetRef="submitTransfer">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=executionAllowed = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowSubmitResult" sourceRef="submitTransfer" targetRef="submissionGateway"/>
+    <bpmn:sequenceFlow id="flowSubmissionAccepted" sourceRef="submissionGateway" targetRef="transactionResult">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=submissionOutcome = "SUBMITTED"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowSubmissionUnknown" sourceRef="submissionGateway" targetRef="submissionUnknown">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=submissionOutcome != "SUBMITTED"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowResultReconcile" sourceRef="transactionResult" targetRef="reconcileTransfer"/>
+    <bpmn:sequenceFlow id="flowReconcileGateway" sourceRef="reconcileTransfer" targetRef="reconciliationGateway"/>
+    <bpmn:sequenceFlow id="flowReconciliationPending" sourceRef="reconciliationGateway" targetRef="transactionResult">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=reconciliationPending = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowReconciliationMismatch" sourceRef="reconciliationGateway" targetRef="reconciliationHeld">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=reconciliationMatched = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowReconciliationMatch" sourceRef="reconciliationGateway" targetRef="transferCompleted">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=reconciliationMatched = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+</bpmn:definitions>

@@ -29,6 +29,42 @@ public class MongoInfrastructureInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         try {
             createCollectionIfMissing("schema_migrations");
+            createCollectionIfMissing("transfer_instructions");
+            createCollectionIfMissing("transfer_audit");
+            createCollectionIfMissing("screening_requests");
+            createCollectionIfMissing("screening_results");
+            createCollectionIfMissing("transfer_submissions");
+            mongoTemplate.indexOps("transfer_instructions").createIndex(
+                new Index()
+                    .on("tenantId", Sort.Direction.ASC)
+                    .on("initiatingPrincipal", Sort.Direction.ASC)
+                    .on("idempotencyKey", Sort.Direction.ASC)
+                    .unique()
+                    .named("transfer_principal_idempotency_unique")
+            );
+            mongoTemplate.indexOps("transfer_audit").createIndex(
+                new Index().on("instructionId", Sort.Direction.ASC)
+                    .on("occurredAt", Sort.Direction.ASC).named("transfer_audit_timeline")
+            );
+            mongoTemplate.indexOps("screening_requests").createIndex(
+                new Index().on("instructionId", Sort.Direction.ASC)
+                    .on("screeningType", Sort.Direction.ASC).unique().named("screening_instruction_type_unique")
+            );
+            mongoTemplate.indexOps("screening_requests").createIndex(
+                new Index().on("correlationId", Sort.Direction.ASC).unique().named("correlation_id_unique")
+            );
+            mongoTemplate.indexOps("screening_results").createIndex(
+                new Index().on("providerId", Sort.Direction.ASC)
+                    .on("messageId", Sort.Direction.ASC).unique().named("provider_message_unique")
+            );
+            mongoTemplate.indexOps("screening_results").createIndex(
+                new Index().on("requestId", Sort.Direction.ASC)
+                    .unique().named("screening_request_result_unique")
+            );
+            mongoTemplate.indexOps("transfer_submissions").createIndex(
+                new Index().on("transactionHash", Sort.Direction.ASC)
+                    .unique().sparse().named("transaction_hash_unique_sparse")
+            );
             if (migrationApplied()) {
                 return;
             }

@@ -6,6 +6,10 @@ group = "ai.generalcontracts"
 version = "0.0.1-SNAPSHOT"
 
 dependencies {
+    implementation(project(":modules:common-domain"))
+    implementation(project(":modules:domain-service"))
+    implementation(project(":modules:process-definitions"))
+    implementation(project(":modules:process-workers"))
     implementation(project(":modules:chain-adapter"))
     implementation(project(":modules:persistence-mongo"))
     implementation(libs.web3j.core)

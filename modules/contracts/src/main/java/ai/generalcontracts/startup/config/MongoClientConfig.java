@@ -1,10 +1,8 @@
 package ai.generalcontracts.startup.config;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.mongodb.autoconfigure.MongoProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
@@ -13,7 +11,10 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 import org.springframework.util.StringUtils;
 
 @Configuration
-@EnableMongoRepositories(basePackages = "ai.generalcontracts.startup.repository")
+@EnableMongoRepositories(basePackages = {
+    "ai.generalcontracts.startup.repository",
+    "ai.generalcontracts.startup.transfer"
+})
 public class MongoClientConfig extends AbstractMongoClientConfiguration {
     private final MongoProperties mongoProperties;
     private final ResourceLoader resourceLoader;
