@@ -18,7 +18,7 @@ This document defines the technical architecture for a blockchain-backed busines
 | A2 | Camunda 8 (Zeebe) with external job workers | Camunda 7: use embedded engine and Java delegates; MongoDB still holds domain data only |
 | A3 | Camunda keeps its own process-state store (Zeebe + Elasticsearch/OpenSearch). MongoDB is **not** the engine's persistence layer | n/a (Camunda does not support MongoDB as engine DB) |
 | A4 | Chain is the source of truth for ownership/settlement; MongoDB is a projection plus workflow data | If chain is only an audit log, relax the reconciliation rules in 6.4 |
-| A5 | Java 21, Spring Boot 3.x | Quarkus / Micronaut: adjust modules only |
+| A5 | Java 21, spring boot 4.x | Quarkus / Micronaut: adjust modules only |
 
 ### 1.3 Architectural drivers
 - **Integrity:** every business-critical state change is anchored on-chain.
@@ -114,7 +114,7 @@ flowchart LR
 | Layer | Choice | Notes |
 |---|---|---|
 | Language/Runtime | Java 21 | Virtual threads optional for IO-bound workers |
-| Framework | Spring Boot 3.x | |
+| Framework | spring boot 4.x | |
 | Build | Gradle 8.x, Kotlin DSL, version catalog, convention plugins | |
 | Orchestration | Camunda 8 (Zeebe) + Spring Zeebe SDK | Verify current client artifact for your Camunda version |
 | Persistence | MongoDB 7.x (replica set required for transactions) | Spring Data MongoDB |

@@ -1,0 +1,995 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:conversion="http://camunda.org/schema/conversion/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1dzyjl7" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.48.0" conversion:converterVersion="0.13.3" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:collaboration id="Collaboration_0i3l7kv" isClosed="false">
+    <bpmn:participant id="Participant_Client_Token_Purchase" name="Client Token Purchase" processRef="Process_Client_Token_Purchase" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Client_Token_Purchase" name="Client Token Purchase" processType="None" isClosed="false" isExecutable="true">
+    <bpmn:serviceTask id="Activity_1br31cx" name="Validate" implementation="##WebService">
+      <bpmn:extensionElements>
+        <conversion:message severity="REVIEW">Delegate class or expression '${emptyDelegate}' has been transformed to job type 'emptyDelegate'.</conversion:message>
+        <zeebe:taskHeaders>
+          <zeebe:header key="delegateExpression" value="${emptyDelegate}" />
+        </zeebe:taskHeaders>
+        <zeebe:taskDefinition type="emptyDelegate" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1gt5zfd</bpmn:incoming>
+      <bpmn:outgoing>Flow_1lqo952</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:intermediateThrowEvent id="Event_1ss5qtf" name="Rejected - Revervse from Transfer Asset To Payout">
+      <bpmn:incoming>Flow_1tlo0wh</bpmn:incoming>
+      <bpmn:incoming>Flow_0kvxy3l</bpmn:incoming>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_1yt87sr" name="Rejected - Revervse from Transfer Asset To Payout" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateThrowEvent id="Event_1xu8hw0" name="Rejected - Revervse from Transfer Asset From Payout">
+      <bpmn:incoming>Flow_1115y6w</bpmn:incoming>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_1ssvsnq" name="Rejected - Revervse from Transfer Asset From Payout" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateThrowEvent id="Event_1itjrfa" name="Rejected - Reverse From Flexibus Postings">
+      <bpmn:incoming>Flow_1rt1txw</bpmn:incoming>
+      <bpmn:incoming>Flow_1hl4eec</bpmn:incoming>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_09ocsk1" name="Rejected - Reverse From Flexibus Postings" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:exclusiveGateway id="Gateway_0o0dqa6" default="Flow_1hfqacx">
+      <bpmn:incoming>Flow_1i8m8f9</bpmn:incoming>
+      <bpmn:outgoing>Flow_1hfqacx</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0o357se</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="Gateway_1qsj37i">
+      <bpmn:incoming>Flow_0l07yyr</bpmn:incoming>
+      <bpmn:incoming>Flow_0o357se</bpmn:incoming>
+      <bpmn:outgoing>Flow_0i344vz</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:callActivity id="Activity_1cplwuj" name="Transfer Asset From Payout" calledElement="Process_Nexus_Call">
+      <bpmn:extensionElements>
+        <conversion:message severity="WARNING">Element 'in' cannot be transformed. businessKey has to be a process variable in Zeebe.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'INSTRUCTION_ID': Please review transformed expression: 'INSTRUCTION_ID' -&gt; '=INSTRUCTION_ID'.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'BUILD_DISCRIMINATOR': Please review transformed expression: '${'BuildClientPurchaseFromPayoutTransferAssetDelegate'}' -&gt; '="BuildClientPurchaseFromPayoutTransferAssetDelegate"'.</conversion:message>
+        <conversion:message severity="INFO">Unused attribute 'asyncAfter' on 'callActivity' is removed.</conversion:message>
+        <zeebe:calledElement processId="Process_Nexus_Call" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=&#34;BuildClientPurchaseFromPayoutTransferAssetDelegate&#34;" target="BUILD_DISCRIMINATOR" />
+          <zeebe:input source="=INSTRUCTION_ID" target="INSTRUCTION_ID" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1hfqacx</bpmn:incoming>
+      <bpmn:outgoing>Flow_0l07yyr</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:exclusiveGateway id="Gateway_00ni4iz">
+      <bpmn:incoming>Flow_0re48c8</bpmn:incoming>
+      <bpmn:incoming>Flow_0zo5j8w</bpmn:incoming>
+      <bpmn:outgoing>Flow_1mwnvpz</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:callActivity id="Activity_0hva50k" name="Flexibus Postings" calledElement="Process_Prepare_And_Send_Flexcube_Message">
+      <bpmn:extensionElements>
+        <conversion:message severity="WARNING">Attribute 'variableMappingDelegateExpression' with value '${flexcubeMessageDelegateFactory.get('GenerateFlexcubePostingsDelegate')}' on 'callActivity' is not supported.</conversion:message>
+        <conversion:message severity="WARNING">Element 'in' cannot be transformed. businessKey has to be a process variable in Zeebe.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'SEND_DISCRIMINATOR': Please review transformed expression: '${'SendFlexcubePostingsMessageDelegate'}' -&gt; '="SendFlexcubePostingsMessageDelegate"'.</conversion:message>
+        <conversion:message severity="INFO">Unused attribute 'asyncAfter' on 'callActivity' is removed.</conversion:message>
+        <zeebe:calledElement processId="Process_Prepare_And_Send_Flexcube_Message" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=&#34;SendFlexcubePostingsMessageDelegate&#34;" target="SEND_DISCRIMINATOR" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1mwnvpz</bpmn:incoming>
+      <bpmn:outgoing>Flow_1i8m8f9</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:callActivity id="Activity_04cw9e1" name="Transfer Asset To Payout" calledElement="Process_Nexus_Call">
+      <bpmn:extensionElements>
+        <conversion:message severity="WARNING">Element 'in' cannot be transformed. businessKey has to be a process variable in Zeebe.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'INSTRUCTION_ID': Please review transformed expression: 'INSTRUCTION_ID' -&gt; '=INSTRUCTION_ID'.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'BUILD_DISCRIMINATOR': Please review transformed expression: '${'BuildBranchGeneralToPayoutTransferAssetDelegate'}' -&gt; '="BuildBranchGeneralToPayoutTransferAssetDelegate"'.</conversion:message>
+        <conversion:message severity="INFO">Unused attribute 'asyncAfter' on 'callActivity' is removed.</conversion:message>
+        <zeebe:calledElement processId="Process_Nexus_Call" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=&#34;BuildBranchGeneralToPayoutTransferAssetDelegate&#34;" target="BUILD_DISCRIMINATOR" />
+          <zeebe:input source="=INSTRUCTION_ID" target="INSTRUCTION_ID" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_119e5lt</bpmn:incoming>
+      <bpmn:outgoing>Flow_0re48c8</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:intermediateThrowEvent id="Event_0qhohqg" name="Rejected">
+      <bpmn:incoming>Flow_0n6lokg</bpmn:incoming>
+      <bpmn:incoming>Flow_0u4oawz</bpmn:incoming>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_1l4tcno" name="Rejected" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:exclusiveGateway id="Gateway_03xplnr" default="Flow_119e5lt">
+      <bpmn:incoming>Flow_1lqo952</bpmn:incoming>
+      <bpmn:outgoing>Flow_119e5lt</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0zo5j8w</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0n6lokg</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:parallelGateway id="Gateway_1tw2p6o">
+      <bpmn:extensionElements>
+        <conversion:message severity="INFO">Unused attribute 'asyncBefore' on 'parallelGateway' is removed.</conversion:message>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_07brp4c</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ps1r01</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0jv1a3p</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:exclusiveGateway id="Gateway_0qx6pfw">
+      <bpmn:incoming>Flow_0i344vz</bpmn:incoming>
+      <bpmn:incoming>Flow_0e4l290</bpmn:incoming>
+      <bpmn:outgoing>Flow_07brp4c</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:callActivity id="Activity_1xix1jz" name="Send to PNR" calledElement="Process_Prepare_And_Send_Payment_Hub_Message">
+      <bpmn:extensionElements>
+        <conversion:message severity="WARNING">Attribute 'variableMappingDelegateExpression' with value '${paymentHubMessageDelegateFactory.get('GeneratePaymentHubClientPurchasePaymentRequestDelegate')}' on 'callActivity' is not supported.</conversion:message>
+        <conversion:message severity="WARNING">Element 'in' cannot be transformed. businessKey has to be a process variable in Zeebe.</conversion:message>
+        <conversion:message severity="TASK">Execution Listener at 'end' with implementation '${isSeizedDelegate}' can be transformed to a job worker. Please adjust the job type.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'SEND_DISCRIMINATOR': Please review transformed expression: '${'SendPaymentHubPaymentRequestMessageDelegate'}' -&gt; '="SendPaymentHubPaymentRequestMessageDelegate"'.</conversion:message>
+        <conversion:message severity="INFO">Unused attribute 'asyncAfter' on 'callActivity' is removed.</conversion:message>
+        <zeebe:calledElement processId="Process_Prepare_And_Send_Payment_Hub_Message" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=&#34;SendPaymentHubPaymentRequestMessageDelegate&#34;" target="SEND_DISCRIMINATOR" />
+        </zeebe:ioMapping>
+        <zeebe:executionListeners>
+          <zeebe:executionListener eventType="end" type="isSeizedDelegate" />
+        </zeebe:executionListeners>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1hcmn9l</bpmn:incoming>
+      <bpmn:outgoing>Flow_1e0jola</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:intermediateThrowEvent id="Event_0moeyoj" name="Rejected">
+      <bpmn:incoming>Flow_0l81icl</bpmn:incoming>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_1uwyitg" name="Rejected" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:startEvent id="StartEvent_1" name="Message Received">
+      <bpmn:extensionElements>
+        <conversion:message severity="INFO">Unused attribute 'asyncAfter' on 'startEvent' is removed.</conversion:message>
+        <conversion:reference>Message_1etaqd2</conversion:reference>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1hcmn9l</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1jn447l" messageRef="Message_1etaqd2" />
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Gateway_1gadahk" default="Flow_0e4l290">
+      <bpmn:incoming>Flow_1e0jola</bpmn:incoming>
+      <bpmn:outgoing>Flow_1gt5zfd</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0e4l290</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:boundaryEvent id="Event_0o51mcv" attachedToRef="Activity_0hva50k">
+      <bpmn:extensionElements>
+        <conversion:reference>Error_1cjmc4x</conversion:reference>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1rt1txw</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_0z12de8" errorRef="Error_1cjmc4x" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Event_07tu3ln" attachedToRef="Activity_0hva50k">
+      <bpmn:extensionElements>
+        <conversion:reference>Error_12groy9</conversion:reference>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_0kvxy3l</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_1wpeigw" errorRef="Error_12groy9" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Event_1hzjsv4" attachedToRef="Activity_1cplwuj">
+      <bpmn:extensionElements>
+        <conversion:reference>Error_1iqmjbz</conversion:reference>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1115y6w</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_1v0fhqh" errorRef="Error_1iqmjbz" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Event_1wtrcds" attachedToRef="Activity_1cplwuj">
+      <bpmn:extensionElements>
+        <conversion:reference>Error_12o7t1b</conversion:reference>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1hl4eec</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_0i51kkr" errorRef="Error_12o7t1b" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Event_07lcg07" attachedToRef="Activity_04cw9e1">
+      <bpmn:extensionElements>
+        <conversion:reference>Error_1iqmjbz</conversion:reference>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_1tlo0wh</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_0f8iuz3" errorRef="Error_1iqmjbz" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Event_173y9n2" attachedToRef="Activity_04cw9e1">
+      <bpmn:extensionElements>
+        <conversion:reference>Error_12o7t1b</conversion:reference>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_0u4oawz</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_1b5dt6v" errorRef="Error_12o7t1b" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Event_141jouc" attachedToRef="Activity_1xix1jz">
+      <bpmn:extensionElements>
+        <conversion:reference>Error_0k576yl</conversion:reference>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_0l81icl</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_0fboald" errorRef="Error_0k576yl" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_1gt5zfd" sourceRef="Gateway_1gadahk" targetRef="Activity_1br31cx">
+      <bpmn:extensionElements>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/exclusive-gateways/#conditions" severity="REVIEW">Condition expression: Please review transformed expression: '${FLOW_TYPE == 'LEGACY'}' -&gt; '=FLOW_TYPE = "LEGACY"'.</conversion:message>
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=FLOW_TYPE = "LEGACY"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1lqo952" sourceRef="Activity_1br31cx" targetRef="Gateway_03xplnr" />
+    <bpmn:sequenceFlow id="Flow_1tlo0wh" sourceRef="Event_07lcg07" targetRef="Event_1ss5qtf" />
+    <bpmn:sequenceFlow id="Flow_0kvxy3l" sourceRef="Event_07tu3ln" targetRef="Event_1ss5qtf" />
+    <bpmn:sequenceFlow id="Flow_1115y6w" sourceRef="Event_1hzjsv4" targetRef="Event_1xu8hw0" />
+    <bpmn:sequenceFlow id="Flow_1hl4eec" sourceRef="Event_1wtrcds" targetRef="Event_1itjrfa" />
+    <bpmn:sequenceFlow id="Flow_1rt1txw" sourceRef="Event_0o51mcv" targetRef="Event_1itjrfa" />
+    <bpmn:sequenceFlow id="Flow_1i8m8f9" sourceRef="Activity_0hva50k" targetRef="Gateway_0o0dqa6" />
+    <bpmn:sequenceFlow id="Flow_0o357se" name="Is Seized" sourceRef="Gateway_0o0dqa6" targetRef="Gateway_1qsj37i">
+      <bpmn:extensionElements>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/exclusive-gateways/#conditions" severity="REVIEW">Condition expression: Please review transformed expression: '${IS_SEIZED}' -&gt; '=IS_SEIZED'.</conversion:message>
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=IS_SEIZED</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1hfqacx" sourceRef="Gateway_0o0dqa6" targetRef="Activity_1cplwuj" />
+    <bpmn:sequenceFlow id="Flow_0l07yyr" sourceRef="Activity_1cplwuj" targetRef="Gateway_1qsj37i" />
+    <bpmn:sequenceFlow id="Flow_0i344vz" sourceRef="Gateway_1qsj37i" targetRef="Gateway_0qx6pfw" />
+    <bpmn:sequenceFlow id="Flow_0re48c8" sourceRef="Activity_04cw9e1" targetRef="Gateway_00ni4iz" />
+    <bpmn:sequenceFlow id="Flow_0zo5j8w" name="Is Seized" sourceRef="Gateway_03xplnr" targetRef="Gateway_00ni4iz">
+      <bpmn:extensionElements>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/exclusive-gateways/#conditions" severity="REVIEW">Condition expression: Please review transformed expression: '${IS_SEIZED}' -&gt; '=IS_SEIZED'.</conversion:message>
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=IS_SEIZED</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1mwnvpz" sourceRef="Gateway_00ni4iz" targetRef="Activity_0hva50k" />
+    <bpmn:sequenceFlow id="Flow_119e5lt" sourceRef="Gateway_03xplnr" targetRef="Activity_04cw9e1" />
+    <bpmn:sequenceFlow id="Flow_0u4oawz" sourceRef="Event_173y9n2" targetRef="Event_0qhohqg" />
+    <bpmn:sequenceFlow id="Flow_0n6lokg" sourceRef="Gateway_03xplnr" targetRef="Event_0qhohqg">
+      <bpmn:extensionElements>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/exclusive-gateways/#conditions" severity="REVIEW">Condition expression: Please review transformed expression: '${false}' -&gt; '=false'.</conversion:message>
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0ebrjno" sourceRef="Activity_0t8ze2k" targetRef="Gateway_14y0q7d" />
+    <bpmn:sequenceFlow id="Flow_0pkj8lx" sourceRef="Activity_0yrwftd" targetRef="Gateway_1t99xgh" />
+    <bpmn:sequenceFlow id="Flow_07brp4c" sourceRef="Gateway_0qx6pfw" targetRef="Gateway_1tw2p6o" />
+    <bpmn:sequenceFlow id="Flow_1ps1r01" sourceRef="Gateway_1tw2p6o" targetRef="Gateway_0aw4xtu" />
+    <bpmn:sequenceFlow id="Flow_0jv1a3p" sourceRef="Gateway_1tw2p6o" targetRef="Activity_0yrwftd" />
+    <bpmn:sequenceFlow id="Flow_0e4l290" sourceRef="Gateway_1gadahk" targetRef="Gateway_0qx6pfw" />
+    <bpmn:sequenceFlow id="Flow_1hcmn9l" sourceRef="StartEvent_1" targetRef="Activity_1xix1jz" />
+    <bpmn:sequenceFlow id="Flow_1e0jola" sourceRef="Activity_1xix1jz" targetRef="Gateway_1gadahk" />
+    <bpmn:sequenceFlow id="Flow_0l81icl" sourceRef="Event_141jouc" targetRef="Event_0moeyoj" />
+    <bpmn:intermediateCatchEvent id="Event_0u5vnuf" name="Rejected - Revervse from Transfer Asset From Payout">
+      <bpmn:outgoing>Flow_0gj0cer</bpmn:outgoing>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_0idh24t" name="Rejected - Revervse from Transfer Asset From Payout" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:callActivity id="Activity_1yznrp4" name="Reverse Transfer Asset From Payout" calledElement="Process_Nexus_Call">
+      <bpmn:extensionElements>
+        <conversion:message severity="WARNING">Element 'in' cannot be transformed. businessKey has to be a process variable in Zeebe.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'INSTRUCTION_ID': Please review transformed expression: 'INSTRUCTION_ID' -&gt; '=INSTRUCTION_ID'.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'BUILD_DISCRIMINATOR': Please review transformed expression: '${'BuildClientPurchaseToPayoutTransferAssetDelegate'}' -&gt; '="BuildClientPurchaseToPayoutTransferAssetDelegate"'.</conversion:message>
+        <conversion:message severity="INFO">Unused attribute 'asyncAfter' on 'callActivity' is removed.</conversion:message>
+        <zeebe:calledElement processId="Process_Nexus_Call" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=INSTRUCTION_ID" target="INSTRUCTION_ID" />
+          <zeebe:input source="=&#34;BuildClientPurchaseToPayoutTransferAssetDelegate&#34;" target="BUILD_DISCRIMINATOR" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0gj0cer</bpmn:incoming>
+      <bpmn:outgoing>Flow_183u3md</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:callActivity id="Activity_0tejzei" name="Reverse Flexibus Postings" calledElement="Process_Prepare_And_Send_Flexcube_Message">
+      <bpmn:extensionElements>
+        <conversion:message severity="WARNING">Attribute 'variableMappingDelegateExpression' with value '${flexcubeMessageDelegateFactory.get('GenerateFlexcubeReversePostingsDelegate')}' on 'callActivity' is not supported.</conversion:message>
+        <conversion:message severity="WARNING">Element 'in' cannot be transformed. businessKey has to be a process variable in Zeebe.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'SEND_DISCRIMINATOR': Please review transformed expression: '${'SendFlexcubePostingsMessageDelegate'}' -&gt; '="SendFlexcubePostingsMessageDelegate"'.</conversion:message>
+        <conversion:message severity="INFO">Unused attribute 'asyncAfter' on 'callActivity' is removed.</conversion:message>
+        <zeebe:calledElement processId="Process_Prepare_And_Send_Flexcube_Message" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=&#34;SendFlexcubePostingsMessageDelegate&#34;" target="SEND_DISCRIMINATOR" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_183u3md</bpmn:incoming>
+      <bpmn:incoming>Flow_09vwbia</bpmn:incoming>
+      <bpmn:outgoing>Flow_0u8cpzb</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:intermediateCatchEvent id="Event_171w7en" name="Rejected - Reverse From Flexibus Postings">
+      <bpmn:outgoing>Flow_09vwbia</bpmn:outgoing>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_0v20ie9" name="Rejected - Reverse From Flexibus Postings" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:callActivity id="Activity_1vlc2b9" name="Reverse Transfer Asset To Payout" calledElement="Process_Nexus_Call">
+      <bpmn:extensionElements>
+        <conversion:message severity="WARNING">Element 'in' cannot be transformed. businessKey has to be a process variable in Zeebe.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'INSTRUCTION_ID': Please review transformed expression: 'INSTRUCTION_ID' -&gt; '=INSTRUCTION_ID'.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'BUILD_DISCRIMINATOR': Please review transformed expression: '${'BuildBranchPayoutToGeneralTransferAssetDelegate'}' -&gt; '="BuildBranchPayoutToGeneralTransferAssetDelegate"'.</conversion:message>
+        <conversion:message severity="INFO">Unused attribute 'asyncAfter' on 'callActivity' is removed.</conversion:message>
+        <zeebe:calledElement processId="Process_Nexus_Call" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=&#34;BuildBranchPayoutToGeneralTransferAssetDelegate&#34;" target="BUILD_DISCRIMINATOR" />
+          <zeebe:input source="=INSTRUCTION_ID" target="INSTRUCTION_ID" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1br7kov</bpmn:incoming>
+      <bpmn:outgoing>Flow_18b9kzj</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:exclusiveGateway id="Gateway_0xfc89k" default="Flow_1br7kov">
+      <bpmn:incoming>Flow_0u8cpzb</bpmn:incoming>
+      <bpmn:incoming>Flow_0w713ch</bpmn:incoming>
+      <bpmn:outgoing>Flow_1br7kov</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1sdr2jf</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="Gateway_10w5kf6">
+      <bpmn:incoming>Flow_18b9kzj</bpmn:incoming>
+      <bpmn:incoming>Flow_1sdr2jf</bpmn:incoming>
+      <bpmn:outgoing>Flow_15ci328</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateCatchEvent id="Event_1trlyek" name="Rejected">
+      <bpmn:outgoing>Flow_11887od</bpmn:outgoing>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_090jez9" name="Rejected" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Event_0zdx76v" name="Rejected - Revervse from Transfer Asset To Payout">
+      <bpmn:outgoing>Flow_0w713ch</bpmn:outgoing>
+      <bpmn:linkEventDefinition id="LinkEventDefinition_0kqyf0r" name="Rejected - Revervse from Transfer Asset To Payout" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:parallelGateway id="Gateway_1ch44qj">
+      <bpmn:extensionElements>
+        <conversion:message severity="INFO">Unused attribute 'asyncBefore' on 'parallelGateway' is removed.</conversion:message>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1mnixjh</bpmn:incoming>
+      <bpmn:outgoing>Flow_132n4lt</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1ik6r0g</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:exclusiveGateway id="Gateway_13uf7zo">
+      <bpmn:incoming>Flow_11887od</bpmn:incoming>
+      <bpmn:incoming>Flow_15ci328</bpmn:incoming>
+      <bpmn:outgoing>Flow_1mnixjh</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0gj0cer" sourceRef="Event_0u5vnuf" targetRef="Activity_1yznrp4" />
+    <bpmn:sequenceFlow id="Flow_183u3md" sourceRef="Activity_1yznrp4" targetRef="Activity_0tejzei" />
+    <bpmn:sequenceFlow id="Flow_09vwbia" sourceRef="Event_171w7en" targetRef="Activity_0tejzei" />
+    <bpmn:sequenceFlow id="Flow_0u8cpzb" sourceRef="Activity_0tejzei" targetRef="Gateway_0xfc89k" />
+    <bpmn:sequenceFlow id="Flow_1br7kov" sourceRef="Gateway_0xfc89k" targetRef="Activity_1vlc2b9" />
+    <bpmn:sequenceFlow id="Flow_18b9kzj" sourceRef="Activity_1vlc2b9" targetRef="Gateway_10w5kf6" />
+    <bpmn:sequenceFlow id="Flow_0w713ch" sourceRef="Event_0zdx76v" targetRef="Gateway_0xfc89k" />
+    <bpmn:sequenceFlow id="Flow_1sdr2jf" name="Is Seized" sourceRef="Gateway_0xfc89k" targetRef="Gateway_10w5kf6">
+      <bpmn:extensionElements>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/exclusive-gateways/#conditions" severity="REVIEW">Condition expression: Please review transformed expression: '${IS_SEIZED}' -&gt; '=IS_SEIZED'.</conversion:message>
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=IS_SEIZED</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_15ci328" sourceRef="Gateway_10w5kf6" targetRef="Gateway_13uf7zo" />
+    <bpmn:sequenceFlow id="Flow_11887od" sourceRef="Event_1trlyek" targetRef="Gateway_13uf7zo" />
+    <bpmn:sequenceFlow id="Flow_1mnixjh" sourceRef="Gateway_13uf7zo" targetRef="Gateway_1ch44qj" />
+    <bpmn:sequenceFlow id="Flow_132n4lt" sourceRef="Gateway_1ch44qj" targetRef="Gateway_0acd0m8" />
+    <bpmn:sequenceFlow id="Flow_1ik6r0g" sourceRef="Gateway_1ch44qj" targetRef="Activity_0dj3ydq" />
+    <bpmn:sequenceFlow id="Flow_1avkmrc" sourceRef="Activity_0dj3ydq" targetRef="Gateway_13qo8zk" />
+    <bpmn:sequenceFlow id="Flow_1kzaz2x" sourceRef="Activity_10fjas7" targetRef="Gateway_0zqfqmx" />
+    <bpmn:endEvent id="Event_0qshi9y">
+      <bpmn:incoming>Flow_0csv3em</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:parallelGateway id="Gateway_1t99xgh">
+      <bpmn:extensionElements>
+        <conversion:message severity="INFO">Unused attribute 'asyncBefore' on 'parallelGateway' is removed.</conversion:message>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0pkj8lx</bpmn:incoming>
+      <bpmn:incoming>Flow_0niqxy7</bpmn:incoming>
+      <bpmn:outgoing>Flow_0rj6fev</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="Activity_10i6o1t" name="Update Status - COMPLETED" implementation="##WebService">
+      <bpmn:extensionElements>
+        <conversion:message severity="REVIEW">Delegate class or expression '${statusUpdateDelegate}' has been transformed to job type 'statusUpdateDelegate'.</conversion:message>
+        <zeebe:ioMapping>
+          <zeebe:input source="COMPLETED" target="STATUS" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="delegateExpression" value="${statusUpdateDelegate}" />
+        </zeebe:taskHeaders>
+        <zeebe:taskDefinition type="statusUpdateDelegate" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0rj6fev</bpmn:incoming>
+      <bpmn:outgoing>Flow_0csv3em</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0csv3em" sourceRef="Activity_10i6o1t" targetRef="Event_0qshi9y" />
+    <bpmn:sequenceFlow id="Flow_0rj6fev" sourceRef="Gateway_1t99xgh" targetRef="Activity_10i6o1t" />
+    <bpmn:serviceTask id="Activity_0yrwftd" name="3M Pain002 Processed" implementation="##WebService">
+      <bpmn:extensionElements>
+        <conversion:message severity="REVIEW">Delegate class or expression '${pain002StatusThreeMDelegate}' has been transformed to job type 'pain002StatusThreeMDelegate'.</conversion:message>
+        <zeebe:ioMapping>
+          <zeebe:input source="PROCESSED" target="STATUS_ID" />
+          <zeebe:input source="TOKEN" target="UPDATE_TYPE" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="delegateExpression" value="${pain002StatusThreeMDelegate}" />
+        </zeebe:taskHeaders>
+        <zeebe:taskDefinition type="pain002StatusThreeMDelegate" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0jv1a3p</bpmn:incoming>
+      <bpmn:outgoing>Flow_0pkj8lx</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:callActivity id="Activity_0t8ze2k" name="PNR Pain002 Processed" calledElement="Process_Prepare_And_Send_Payment_Hub_Message">
+      <bpmn:extensionElements>
+        <conversion:message severity="WARNING">Attribute 'variableMappingDelegateExpression' with value '${paymentHubMessageDelegateFactory.get('Pain002StatusPaymentHubDelegate')}' on 'callActivity' is not supported.</conversion:message>
+        <conversion:message severity="WARNING">Element 'in' cannot be transformed. businessKey has to be a process variable in Zeebe.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'SEND_DISCRIMINATOR': Please review transformed expression: '${'SendPaymentHubPaymentAckMessageDelegate'}' -&gt; '="SendPaymentHubPaymentAckMessageDelegate"'.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'STATUS_ID': Please review transformed expression: '${'PROCESSED'}' -&gt; '="PROCESSED"'.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'MESSAGE_ID': Please review transformed expression: 'PAYMENT_HUB_MESSAGE_RESPONSE_ID' -&gt; '=PAYMENT_HUB_MESSAGE_RESPONSE_ID'.</conversion:message>
+        <conversion:message severity="INFO">Unused attribute 'asyncAfter' on 'callActivity' is removed.</conversion:message>
+        <zeebe:calledElement processId="Process_Prepare_And_Send_Payment_Hub_Message" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=PAYMENT_HUB_MESSAGE_RESPONSE_ID" target="MESSAGE_ID" />
+          <zeebe:input source="=&#34;SendPaymentHubPaymentAckMessageDelegate&#34;" target="SEND_DISCRIMINATOR" />
+          <zeebe:input source="=&#34;PROCESSED&#34;" target="STATUS_ID" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1f3fauk</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ebrjno</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_1f3fauk" sourceRef="Gateway_0aw4xtu" targetRef="Activity_0t8ze2k">
+      <bpmn:extensionElements>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/exclusive-gateways/#conditions" severity="REVIEW">Condition expression: Please review transformed expression: '${FLOW_TYPE == 'LEGACY'}' -&gt; '=FLOW_TYPE = "LEGACY"'.</conversion:message>
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=FLOW_TYPE = "LEGACY"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:exclusiveGateway id="Gateway_14y0q7d">
+      <bpmn:incoming>Flow_0ebrjno</bpmn:incoming>
+      <bpmn:incoming>Flow_1jj0vp5</bpmn:incoming>
+      <bpmn:outgoing>Flow_0niqxy7</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0niqxy7" sourceRef="Gateway_14y0q7d" targetRef="Gateway_1t99xgh" />
+    <bpmn:exclusiveGateway id="Gateway_0aw4xtu" default="Flow_1jj0vp5">
+      <bpmn:incoming>Flow_1ps1r01</bpmn:incoming>
+      <bpmn:outgoing>Flow_1f3fauk</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1jj0vp5</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1jj0vp5" sourceRef="Gateway_0aw4xtu" targetRef="Gateway_14y0q7d" />
+    <bpmn:parallelGateway id="Gateway_13qo8zk">
+      <bpmn:extensionElements>
+        <conversion:message severity="INFO">Unused attribute 'asyncBefore' on 'parallelGateway' is removed.</conversion:message>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1avkmrc</bpmn:incoming>
+      <bpmn:incoming>Flow_0jasrar</bpmn:incoming>
+      <bpmn:outgoing>Flow_15q9t0m</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="Event_1yntb9k">
+      <bpmn:incoming>Flow_0wctov0</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Activity_13kch7b" name="Update Status - REJECTED" implementation="##WebService">
+      <bpmn:extensionElements>
+        <conversion:message severity="REVIEW">Delegate class or expression '${statusUpdateDelegate}' has been transformed to job type 'statusUpdateDelegate'.</conversion:message>
+        <zeebe:ioMapping>
+          <zeebe:input source="REJECTED" target="STATUS" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="delegateExpression" value="${statusUpdateDelegate}" />
+        </zeebe:taskHeaders>
+        <zeebe:taskDefinition type="statusUpdateDelegate" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_15q9t0m</bpmn:incoming>
+      <bpmn:outgoing>Flow_0wctov0</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_15q9t0m" sourceRef="Gateway_13qo8zk" targetRef="Activity_13kch7b" />
+    <bpmn:sequenceFlow id="Flow_0wctov0" sourceRef="Activity_13kch7b" targetRef="Event_1yntb9k" />
+    <bpmn:callActivity id="Activity_10fjas7" name="PNR Pain002 Rejected" calledElement="Process_Prepare_And_Send_Payment_Hub_Message">
+      <bpmn:extensionElements>
+        <conversion:message severity="WARNING">Attribute 'variableMappingDelegateExpression' with value '${paymentHubMessageDelegateFactory.get('Pain002StatusPaymentHubDelegate')}' on 'callActivity' is not supported.</conversion:message>
+        <conversion:message severity="WARNING">Element 'in' cannot be transformed. businessKey has to be a process variable in Zeebe.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'SEND_DISCRIMINATOR': Please review transformed expression: '${'SendPaymentHubPaymentAckMessageDelegate'}' -&gt; '="SendPaymentHubPaymentAckMessageDelegate"'.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'STATUS_ID': Please review transformed expression: '${'REJECTED'}' -&gt; '="REJECTED"'.</conversion:message>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/call-activities/#variable-mappings" severity="REVIEW">in, Parameter: 'MESSAGE_ID': Please review transformed expression: 'PAYMENT_HUB_MESSAGE_RESPONSE_ID' -&gt; '=PAYMENT_HUB_MESSAGE_RESPONSE_ID'.</conversion:message>
+        <conversion:message severity="INFO">Unused attribute 'asyncAfter' on 'callActivity' is removed.</conversion:message>
+        <zeebe:calledElement processId="Process_Prepare_And_Send_Payment_Hub_Message" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=&#34;SendPaymentHubPaymentAckMessageDelegate&#34;" target="SEND_DISCRIMINATOR" />
+          <zeebe:input source="=&#34;REJECTED&#34;" target="STATUS_ID" />
+          <zeebe:input source="=PAYMENT_HUB_MESSAGE_RESPONSE_ID" target="MESSAGE_ID" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1bza7xq</bpmn:incoming>
+      <bpmn:outgoing>Flow_1kzaz2x</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:serviceTask id="Activity_0dj3ydq" name="3M Pain002 Rejected" implementation="##WebService">
+      <bpmn:extensionElements>
+        <conversion:message severity="REVIEW">Delegate class or expression '${pain002StatusThreeMDelegate}' has been transformed to job type 'pain002StatusThreeMDelegate'.</conversion:message>
+        <zeebe:ioMapping>
+          <zeebe:input source="REJECTED" target="STATUS_ID" />
+          <zeebe:input source="TOKEN" target="UPDATE_TYPE" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="delegateExpression" value="${pain002StatusThreeMDelegate}" />
+        </zeebe:taskHeaders>
+        <zeebe:taskDefinition type="pain002StatusThreeMDelegate" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1ik6r0g</bpmn:incoming>
+      <bpmn:outgoing>Flow_1avkmrc</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_0acd0m8" default="Flow_1xd2uxm">
+      <bpmn:incoming>Flow_132n4lt</bpmn:incoming>
+      <bpmn:outgoing>Flow_1bza7xq</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1xd2uxm</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1bza7xq" sourceRef="Gateway_0acd0m8" targetRef="Activity_10fjas7">
+      <bpmn:extensionElements>
+        <conversion:message link="https://docs.camunda.io/docs/components/modeler/bpmn/exclusive-gateways/#conditions" severity="REVIEW">Condition expression: Please review transformed expression: '${FLOW_TYPE == 'LEGACY'}' -&gt; '=FLOW_TYPE = "LEGACY"'.</conversion:message>
+      </bpmn:extensionElements>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=FLOW_TYPE = "LEGACY"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:exclusiveGateway id="Gateway_0zqfqmx">
+      <bpmn:incoming>Flow_1kzaz2x</bpmn:incoming>
+      <bpmn:incoming>Flow_1xd2uxm</bpmn:incoming>
+      <bpmn:outgoing>Flow_0jasrar</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0jasrar" sourceRef="Gateway_0zqfqmx" targetRef="Gateway_13qo8zk" />
+    <bpmn:sequenceFlow id="Flow_1xd2uxm" sourceRef="Gateway_0acd0m8" targetRef="Gateway_0zqfqmx" />
+    <bpmn:textAnnotation id="TextAnnotation_14lx1zu">
+      <bpmn:text>Validates 
+format / content / duplicate</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0o0dvrn" associationDirection="None" sourceRef="Activity_1br31cx" targetRef="TextAnnotation_14lx1zu" />
+  </bpmn:process>
+  <bpmn:message id="Message_1etaqd2" name="CLIENT_TOKEN_PURCHASE">
+    <bpmn:extensionElements>
+      <conversion:message severity="TASK">Please define a correlation key if the message is used in a message catch event.</conversion:message>
+      <conversion:referencedBy>StartEvent_1</conversion:referencedBy>
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:error id="Error_0k576yl" name="PAYMENT_HUB_REJECTED" errorCode="PAYMENT_HUB_REJECTED">
+    <bpmn:extensionElements>
+      <conversion:referencedBy>Event_141jouc</conversion:referencedBy>
+    </bpmn:extensionElements>
+  </bpmn:error>
+  <bpmn:error id="Error_12o7t1b" name="NEXUS_REJECTED" errorCode="NEXUS_REJECTED">
+    <bpmn:extensionElements>
+      <conversion:referencedBy>Event_1wtrcds</conversion:referencedBy>
+      <conversion:referencedBy>Event_173y9n2</conversion:referencedBy>
+    </bpmn:extensionElements>
+  </bpmn:error>
+  <bpmn:error id="Error_1iqmjbz" name="NEXUS_REJECTED_REVERSE_OPERATION" errorCode="NEXUS_REJECTED_REVERSE_OPERATION">
+    <bpmn:extensionElements>
+      <conversion:referencedBy>Event_1hzjsv4</conversion:referencedBy>
+      <conversion:referencedBy>Event_07lcg07</conversion:referencedBy>
+    </bpmn:extensionElements>
+  </bpmn:error>
+  <bpmn:error id="Error_12groy9" name="FLEXCUBE_REJECTED" errorCode="FLEXCUBE_REJECTED">
+    <bpmn:extensionElements>
+      <conversion:referencedBy>Event_07tu3ln</conversion:referencedBy>
+    </bpmn:extensionElements>
+  </bpmn:error>
+  <bpmn:error id="Error_1cjmc4x" name="FLEXCUBE_REJECTED_REVERSE_OPERATION" errorCode="FLEXCUBE_REJECTED_REVERSE_OPERATION">
+    <bpmn:extensionElements>
+      <conversion:referencedBy>Event_0o51mcv</conversion:referencedBy>
+    </bpmn:extensionElements>
+  </bpmn:error>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0i3l7kv">
+      <bpmndi:BPMNShape id="Participant_1ya92rr_di" bpmnElement="Participant_Client_Token_Purchase" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="2290" height="810" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0c67gkx_di" bpmnElement="Activity_1br31cx">
+        <dc:Bounds x="590" y="247" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_15eon5c" bpmnElement="Event_1ss5qtf" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="902" y="152" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="880" y="93" width="89" height="53" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1h6t8hm" bpmnElement="Event_1xu8hw0" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1392" y="152" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1374" y="93" width="79" height="53" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_16byv43" bpmnElement="Event_1itjrfa" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1142" y="152" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1119" y="100" width="87" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0o0dqa6_di" bpmnElement="Gateway_0o0dqa6" isMarkerVisible="true">
+        <dc:Bounds x="1235" y="262" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1qsj37i_di" bpmnElement="Gateway_1qsj37i" isMarkerVisible="true">
+        <dc:Bounds x="1485" y="262" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0alzsm6" bpmnElement="Activity_1cplwuj">
+        <dc:Bounds x="1330" y="247" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_00ni4iz_di" bpmnElement="Gateway_00ni4iz" isMarkerVisible="true">
+        <dc:Bounds x="985" y="262" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_04nocmh_di" bpmnElement="Activity_0hva50k">
+        <dc:Bounds x="1080" y="247" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1uj8vj3_di" bpmnElement="Activity_04cw9e1">
+        <dc:Bounds x="840" y="247" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1wrnbrz" bpmnElement="Event_0qhohqg" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="742" y="152" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="738" y="122" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_03xplnr_di" bpmnElement="Gateway_03xplnr" isMarkerVisible="true">
+        <dc:Bounds x="735" y="262" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0erlbcg_di" bpmnElement="Gateway_1tw2p6o">
+        <dc:Bounds x="1733" y="262" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1q5618t" bpmnElement="Gateway_0qx6pfw" isMarkerVisible="true">
+        <dc:Bounds x="1605" y="262" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0l0xz9n_di" bpmnElement="Activity_1xix1jz">
+        <dc:Bounds x="332" y="247" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0ruh26f" bpmnElement="Event_0moeyoj" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="364" y="152" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="360" y="122" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1m5j81k_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="214" y="269" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="210" y="312" width="46" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_13q2ddd" bpmnElement="Gateway_1gadahk" isMarkerVisible="true">
+        <dc:Bounds x="485" y="262" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_13a0rrz" bpmnElement="Event_0u5vnuf" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="462" y="594" width="36" height="36" />
+        <bpmndi:BPMNLabel color:color="#e53935">
+          <dc:Bounds x="441" y="535" width="79" height="53" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0ig10rr" bpmnElement="Activity_1yznrp4" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="430" y="672" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1gezn5v" bpmnElement="Activity_0tejzei" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="590" y="672" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1c4hqfo" bpmnElement="Event_171w7en" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="622" y="594" width="36" height="36" />
+        <bpmndi:BPMNLabel color:color="#e53935">
+          <dc:Bounds x="597" y="542" width="87" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0bd5ndk" bpmnElement="Activity_1vlc2b9" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="840" y="672" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0xfc89k_di" bpmnElement="Gateway_0xfc89k" isMarkerVisible="true" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="745" y="687" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_10w5kf6_di" bpmnElement="Gateway_10w5kf6" isMarkerVisible="true" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="995" y="687" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0bygtkv" bpmnElement="Event_1trlyek" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1132" y="594" width="36" height="36" />
+        <bpmndi:BPMNLabel color:color="#e53935">
+          <dc:Bounds x="1129" y="570" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1f99m98" bpmnElement="Event_0zdx76v" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="752" y="594" width="36" height="36" />
+        <bpmndi:BPMNLabel color:color="#e53935">
+          <dc:Bounds x="726" y="535" width="89" height="53" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_12sc6c4_di" bpmnElement="Gateway_1ch44qj" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1255" y="687" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_13uf7zo_di" bpmnElement="Gateway_13uf7zo" isMarkerVisible="true" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1125" y="687" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0apwpip" bpmnElement="Event_0qshi9y">
+        <dc:Bounds x="2382" y="269" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_00hh1hx_di" bpmnElement="Gateway_1t99xgh">
+        <dc:Bounds x="2115" y="262" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_07lxnv0_di" bpmnElement="Activity_10i6o1t">
+        <dc:Bounds x="2220" y="247" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1ovt7ig" bpmnElement="Activity_0yrwftd">
+        <dc:Bounds x="1910" y="170" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1ishbwy" bpmnElement="Activity_0t8ze2k">
+        <dc:Bounds x="1910" y="330" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1cvtk6n" bpmnElement="Gateway_14y0q7d" isMarkerVisible="true">
+        <dc:Bounds x="2055" y="345" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_06kwxbl" bpmnElement="Gateway_0aw4xtu" isMarkerVisible="true">
+        <dc:Bounds x="1806" y="345" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1unb7f5_di" bpmnElement="Gateway_13qo8zk" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1696" y="687" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0tqkvt0" bpmnElement="Event_1yntb9k" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1913" y="694" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0oadfzv" bpmnElement="Activity_13kch7b" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1781" y="672" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0co5l59" bpmnElement="Activity_10fjas7" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1470" y="742" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_17q67bd" bpmnElement="Activity_0dj3ydq" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1470" y="612" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_18bxf6u" bpmnElement="Gateway_0acd0m8" isMarkerVisible="true" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1355" y="757" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1st5d4y" bpmnElement="Gateway_0zqfqmx" isMarkerVisible="true" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1625" y="757" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_14lx1zu_di" bpmnElement="TextAnnotation_14lx1zu">
+        <dc:Bounds x="560" y="130" width="160" height="40" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_09u4nhh_di" bpmnElement="Event_141jouc" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="364" y="229" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0dpycbr" bpmnElement="Event_173y9n2" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="842" y="229" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1g0p298" bpmnElement="Event_07lcg07" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="902" y="229" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_14yg8h1" bpmnElement="Event_1wtrcds" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1332" y="229" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1i68ej5" bpmnElement="Event_1hzjsv4" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1392" y="229" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0vozwqf" bpmnElement="Event_07tu3ln" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1082" y="229" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1c6lxbl" bpmnElement="Event_0o51mcv" bioc:stroke="#e53935" bioc:fill="#ffcdd2" color:background-color="#ffcdd2" color:border-color="#e53935">
+        <dc:Bounds x="1142" y="229" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1gt5zfd_di" bpmnElement="Flow_1gt5zfd">
+        <di:waypoint x="535" y="287" />
+        <di:waypoint x="590" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lqo952_di" bpmnElement="Flow_1lqo952">
+        <di:waypoint x="690" y="287" />
+        <di:waypoint x="735" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1tlo0wh_di" bpmnElement="Flow_1tlo0wh" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="920" y="229" />
+        <di:waypoint x="920" y="188" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kvxy3l_di" bpmnElement="Flow_0kvxy3l" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1100" y="229" />
+        <di:waypoint x="1100" y="170" />
+        <di:waypoint x="938" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1115y6w_di" bpmnElement="Flow_1115y6w" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1410" y="229" />
+        <di:waypoint x="1410" y="188" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hl4eec_di" bpmnElement="Flow_1hl4eec" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1350" y="229" />
+        <di:waypoint x="1350" y="170" />
+        <di:waypoint x="1178" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1rt1txw_di" bpmnElement="Flow_1rt1txw" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1160" y="229" />
+        <di:waypoint x="1160" y="188" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1i8m8f9_di" bpmnElement="Flow_1i8m8f9">
+        <di:waypoint x="1180" y="287" />
+        <di:waypoint x="1235" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o357se_di" bpmnElement="Flow_0o357se">
+        <di:waypoint x="1260" y="312" />
+        <di:waypoint x="1260" y="370" />
+        <di:waypoint x="1510" y="370" />
+        <di:waypoint x="1510" y="312" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1267" y="353" width="46" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hfqacx_di" bpmnElement="Flow_1hfqacx">
+        <di:waypoint x="1285" y="287" />
+        <di:waypoint x="1330" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0l07yyr_di" bpmnElement="Flow_0l07yyr">
+        <di:waypoint x="1430" y="287" />
+        <di:waypoint x="1485" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0i344vz_di" bpmnElement="Flow_0i344vz">
+        <di:waypoint x="1535" y="287" />
+        <di:waypoint x="1605" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0re48c8_di" bpmnElement="Flow_0re48c8">
+        <di:waypoint x="940" y="287" />
+        <di:waypoint x="985" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0zo5j8w_di" bpmnElement="Flow_0zo5j8w">
+        <di:waypoint x="760" y="312" />
+        <di:waypoint x="760" y="370" />
+        <di:waypoint x="1010" y="370" />
+        <di:waypoint x="1010" y="312" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="767" y="353" width="46" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1mwnvpz_di" bpmnElement="Flow_1mwnvpz">
+        <di:waypoint x="1035" y="287" />
+        <di:waypoint x="1080" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_119e5lt_di" bpmnElement="Flow_119e5lt">
+        <di:waypoint x="785" y="287" />
+        <di:waypoint x="840" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0u4oawz_di" bpmnElement="Flow_0u4oawz" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="860" y="229" />
+        <di:waypoint x="860" y="170" />
+        <di:waypoint x="778" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0n6lokg_di" bpmnElement="Flow_0n6lokg" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="760" y="262" />
+        <di:waypoint x="760" y="188" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ebrjno_di" bpmnElement="Flow_0ebrjno">
+        <di:waypoint x="2010" y="370" />
+        <di:waypoint x="2055" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0pkj8lx_di" bpmnElement="Flow_0pkj8lx">
+        <di:waypoint x="2010" y="210" />
+        <di:waypoint x="2140" y="210" />
+        <di:waypoint x="2140" y="262" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_07brp4c_di" bpmnElement="Flow_07brp4c">
+        <di:waypoint x="1655" y="287" />
+        <di:waypoint x="1733" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ps1r01_di" bpmnElement="Flow_1ps1r01">
+        <di:waypoint x="1758" y="312" />
+        <di:waypoint x="1758" y="370" />
+        <di:waypoint x="1806" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jv1a3p_di" bpmnElement="Flow_0jv1a3p">
+        <di:waypoint x="1758" y="262" />
+        <di:waypoint x="1758" y="210" />
+        <di:waypoint x="1910" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0e4l290_di" bpmnElement="Flow_0e4l290">
+        <di:waypoint x="510" y="312" />
+        <di:waypoint x="510" y="440" />
+        <di:waypoint x="1630" y="440" />
+        <di:waypoint x="1630" y="312" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hcmn9l_di" bpmnElement="Flow_1hcmn9l">
+        <di:waypoint x="250" y="287" />
+        <di:waypoint x="332" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1e0jola_di" bpmnElement="Flow_1e0jola">
+        <di:waypoint x="432" y="287" />
+        <di:waypoint x="485" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0l81icl_di" bpmnElement="Flow_0l81icl" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="382" y="229" />
+        <di:waypoint x="382" y="188" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_08ypcjd" bpmnElement="Flow_0gj0cer" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="480" y="630" />
+        <di:waypoint x="480" y="672" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1syxo5j" bpmnElement="Flow_183u3md" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="530" y="712" />
+        <di:waypoint x="590" y="712" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09vwbia_di" bpmnElement="Flow_09vwbia" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="640" y="630" />
+        <di:waypoint x="640" y="672" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_09ffcf3" bpmnElement="Flow_0u8cpzb" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="690" y="712" />
+        <di:waypoint x="745" y="712" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1br7kov_di" bpmnElement="Flow_1br7kov" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="795" y="712" />
+        <di:waypoint x="840" y="712" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_10k0ik6" bpmnElement="Flow_18b9kzj" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="940" y="712" />
+        <di:waypoint x="995" y="712" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0w713ch_di" bpmnElement="Flow_0w713ch" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="770" y="630" />
+        <di:waypoint x="770" y="687" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1sdr2jf_di" bpmnElement="Flow_1sdr2jf" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="770" y="737" />
+        <di:waypoint x="770" y="792" />
+        <di:waypoint x="1020" y="792" />
+        <di:waypoint x="1020" y="737" />
+        <bpmndi:BPMNLabel color:color="#e53935">
+          <dc:Bounds x="777" y="774" width="46" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15ci328_di" bpmnElement="Flow_15ci328" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1045" y="712" />
+        <di:waypoint x="1125" y="712" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11887od_di" bpmnElement="Flow_11887od" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1150" y="630" />
+        <di:waypoint x="1150" y="687" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1mnixjh_di" bpmnElement="Flow_1mnixjh" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1175" y="712" />
+        <di:waypoint x="1255" y="712" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_132n4lt_di" bpmnElement="Flow_132n4lt" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1280" y="737" />
+        <di:waypoint x="1280" y="782" />
+        <di:waypoint x="1355" y="782" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ik6r0g_di" bpmnElement="Flow_1ik6r0g" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1280" y="687" />
+        <di:waypoint x="1280" y="652" />
+        <di:waypoint x="1470" y="652" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1avkmrc_di" bpmnElement="Flow_1avkmrc" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1570" y="652" />
+        <di:waypoint x="1721" y="652" />
+        <di:waypoint x="1721" y="687" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1kzaz2x_di" bpmnElement="Flow_1kzaz2x" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1570" y="782" />
+        <di:waypoint x="1625" y="782" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0csv3em_di" bpmnElement="Flow_0csv3em">
+        <di:waypoint x="2320" y="287" />
+        <di:waypoint x="2382" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0rj6fev_di" bpmnElement="Flow_0rj6fev">
+        <di:waypoint x="2165" y="287" />
+        <di:waypoint x="2220" y="287" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1f3fauk_di" bpmnElement="Flow_1f3fauk">
+        <di:waypoint x="1856" y="370" />
+        <di:waypoint x="1910" y="370" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0niqxy7_di" bpmnElement="Flow_0niqxy7">
+        <di:waypoint x="2105" y="370" />
+        <di:waypoint x="2140" y="370" />
+        <di:waypoint x="2140" y="312" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jj0vp5_di" bpmnElement="Flow_1jj0vp5">
+        <di:waypoint x="1831" y="395" />
+        <di:waypoint x="1831" y="440" />
+        <di:waypoint x="2080" y="440" />
+        <di:waypoint x="2080" y="395" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15q9t0m_di" bpmnElement="Flow_15q9t0m" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1746" y="712" />
+        <di:waypoint x="1781" y="712" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0wctov0_di" bpmnElement="Flow_0wctov0" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1881" y="712" />
+        <di:waypoint x="1913" y="712" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1bza7xq_di" bpmnElement="Flow_1bza7xq" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1405" y="782" />
+        <di:waypoint x="1470" y="782" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jasrar_di" bpmnElement="Flow_0jasrar" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1675" y="782" />
+        <di:waypoint x="1721" y="782" />
+        <di:waypoint x="1721" y="737" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1xd2uxm_di" bpmnElement="Flow_1xd2uxm" bioc:stroke="#e53935" color:border-color="#e53935">
+        <di:waypoint x="1380" y="807" />
+        <di:waypoint x="1380" y="860" />
+        <di:waypoint x="1650" y="860" />
+        <di:waypoint x="1650" y="807" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0o0dvrn_di" bpmnElement="Association_0o0dvrn">
+        <di:waypoint x="640" y="247" />
+        <di:waypoint x="640" y="170" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

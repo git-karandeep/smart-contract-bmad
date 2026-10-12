@@ -3,7 +3,7 @@
 | Layer | Choice | Notes |
 |---|---|---|
 | Language/Runtime | Java 21 | Virtual threads optional for IO-bound workers |
-| Framework | Spring Boot 3.x | |
+| Framework | spring boot 4.x | |
 | Build | Gradle 8.x, Kotlin DSL, version catalog, convention plugins | |
 | Orchestration | Camunda 8 (Zeebe) + Spring Zeebe SDK | Verify current client artifact for your Camunda version |
 | Persistence | MongoDB 7.x (replica set required for transactions) | Spring Data MongoDB |

@@ -29,7 +29,7 @@ The platform separates concerns:
 - EVM-compatible chain and solidity contracts are the source of truth.
 - Camunda 8 handles orchestration and timers.
 - MongoDB is used as an off-chain projection and workflow store.
-- Java 21 and Spring Boot 3.x are the runtime baseline.
+- Java 21 and spring boot 4.x are the runtime baseline.
 
 ## 5. Success criteria
 

@@ -7,7 +7,7 @@
 | **Status** | Draft v0.1 |
 | **Method** | BMAD (Breakthrough Method for Agile AI-Driven Development) |
 | **Domain (reference)** | Tokenized asset transfer with escrowed settlement |
-| **Runtime** | Java 21, Spring Boot 3.x |
+| **Runtime** | Java 21, spring boot 4.x |
 
 ## Documentation map
 
@@ -76,7 +76,7 @@
 | A2 | Camunda 8 (Zeebe) with external job workers | Camunda 7: use embedded engine and Java delegates; MongoDB still holds domain data only |
 | A3 | Camunda keeps its own process-state store (Zeebe + Elasticsearch/OpenSearch). MongoDB is **not** the engine's persistence layer | n/a (Camunda does not support MongoDB as engine DB) |
 | A4 | Chain is the source of truth for ownership/settlement; MongoDB is a projection plus workflow data | If chain is only an audit log, relax the reconciliation rules in 6.4 |
-| A5 | Java 21, Spring Boot 3.x | Quarkus / Micronaut: adjust modules only |
+| A5 | Java 21, spring boot 4.x | Quarkus / Micronaut: adjust modules only |
 
 ---
 
@@ -177,7 +177,7 @@ PENDING → VALIDATED → [AWAITING_APPROVAL] → SUBMITTED → CONFIRMING → S
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Language / Runtime | Java 21, Spring Boot 3.x | Virtual threads enabled for I/O-heavy workers |
+| Language / Runtime | Java 21, spring boot 4.x | Virtual threads enabled for I/O-heavy workers |
 | Orchestration | Camunda 8 (Zeebe), Spring Zeebe SDK (`@JobWorker`) | BPMN 2.0 + DMN; Operate/Tasklist for ops |
 | Messaging | Apache Kafka, Spring Kafka | Idempotent producer, DLT per topic |
 | Blockchain client | Web3j 4.x | Generated Java wrappers from ABI/BIN |
