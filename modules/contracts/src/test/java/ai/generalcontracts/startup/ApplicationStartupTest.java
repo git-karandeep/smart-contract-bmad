@@ -3,6 +3,7 @@ package ai.generalcontracts.startup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.generalcontracts.startup.config.ClientConfiguration;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,6 +13,7 @@ import java.util.Base64;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -28,7 +30,15 @@ import org.springframework.test.context.ActiveProfiles;
 class ApplicationStartupTest {
 
     @Autowired
+    private ApplicationContext applicationContext;
+
+    @Autowired
     private Environment environment;
+
+    @Test
+    void startsWithoutOptionalSslBundleTrustManager() {
+        assertTrue(applicationContext.getBeansOfType(ClientConfiguration.WrapperTrustManager.class).isEmpty());
+    }
 
     @Test
     void exposesHealthyActuatorEndpoint() throws Exception {
@@ -61,7 +71,7 @@ class ApplicationStartupTest {
     }
 
     @Test
-    void exposesMetricsToAuthenticatedRequests() throws Exception {
+    void rejectsDevelopmentBasicCredentialsOnProtectedOperations() throws Exception {
         int port = environment.getRequiredProperty("local.server.port", Integer.class);
         String credentials = Base64.getEncoder().encodeToString("test-user:test-only".getBytes(StandardCharsets.UTF_8));
         HttpRequest request = HttpRequest.newBuilder(
@@ -73,8 +83,8 @@ class ApplicationStartupTest {
             HttpResponse.BodyHandlers.ofString()
         );
 
-        assertEquals(200, response.statusCode());
-        assertTrue(response.body().contains("\"names\""));
+        assertEquals(401, response.statusCode());
+        assertTrue(response.body().contains("unauthorized"));
     }
 
     @Test

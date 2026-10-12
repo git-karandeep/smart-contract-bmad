@@ -415,17 +415,21 @@ The application supports three Spring profiles: `local`, `test`, and `prod`.
 
 - `local`: safe developer defaults that point to the local Mongo instance without embedded credentials.
 - `test`: isolated startup settings that avoid live infrastructure and disable Mongo health checks.
-- `prod`: requires externally supplied connection and signing values; no real secrets are committed in the repository.
+- `prod`: requires externally supplied connection, JWT issuer/audience, and TLS key/trust material; no real secrets are committed in the repository.
 
-Native local runs bind to `127.0.0.1` and use the non-production HTTP Basic fixture `local-dev` / `local-dev-only`; override credentials with `APP_SECURITY_USERNAME` and `APP_SECURITY_PASSWORD`. The Compose app binds inside its container while its published port remains loopback-only.
+Native local runs bind to `127.0.0.1` and use the local HTTP transport without a default user/password. Health probes remain available, while protected routes fail closed without a valid bearer token and trusted client certificate. The Compose app binds inside its container while its published port remains loopback-only.
 
 Required environment variables for production:
 
 - `MONGODB_URI`
 - `CHAIN_RPC_URL`
 - `SIGNER_KEY_REF`
-- `APP_SECURITY_USERNAME`
-- `APP_SECURITY_PASSWORD`
+- `APP_SECURITY_JWT_ISSUER`
+- `APP_SECURITY_JWT_AUDIENCE`
+- `SERVER_SSL_KEY_STORE_PATH`
+- `SERVER_SSL_KEY_STORE_PASSWORD`
+- `SERVER_SSL_TRUST_STORE_PATH`
+- `SERVER_SSL_TRUST_STORE_PASSWORD`
 
 Optional environment variables:
 
@@ -436,6 +440,8 @@ Optional environment variables:
 - `MONGODB_SSL_ENABLED`
 - `MONGODB_SSL_INVALID_HOSTNAME_ALLOWED`
 - `MONGODB_SSL_CERTIFICATE`
+- `SERVER_SSL_ENABLED` (must remain `true` in production)
+- `SERVER_SSL_CLIENT_AUTH` (must remain `want` so public health probes can omit certificates)
 - `CHAIN_ID`
 - `CHAIN_CONFIRMATIONS`
 - `ESCROW_ADDRESS`
@@ -598,7 +604,7 @@ The workflow and reorg/chaos rows describe future test coverage; this foundation
 ## 13. Security & Operations
 
 - Secrets, keys, deployment boundaries, scans, and the distinction between implemented controls and remaining production work are documented in [Security](docs/security.md).
-- Actuator exposes health, metrics, and Prometheus endpoints; non-health endpoints require HTTP Basic authentication.
+- Actuator exposes health, metrics, and Prometheus endpoints; only GET health/readiness/liveness probes are public. Protected routes require the documented JWT scopes and trusted client certificate.
 - Correlation and transaction identifiers are validated before being copied to response headers and MDC. Do not log request bodies, credentials, signer references, or raw RPC URLs.
 
 ---

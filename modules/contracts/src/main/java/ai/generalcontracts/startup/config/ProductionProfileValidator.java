@@ -12,8 +12,20 @@ public class ProductionProfileValidator {
         validateRequired(environment, "spring.data.mongodb.uri", "MONGODB_URI");
         validateRequired(environment, "chain.rpc-url", "CHAIN_RPC_URL");
         validateRequired(environment, "chain.signer.key-ref", "SIGNER_KEY_REF");
-        validateRequired(environment, "spring.security.user.name", "APP_SECURITY_USERNAME");
-        validateRequired(environment, "spring.security.user.password", "APP_SECURITY_PASSWORD");
+        validateRequired(environment, "app.security.jwt.issuer", "APP_SECURITY_JWT_ISSUER");
+        validateRequired(environment, "app.security.jwt.audience", "APP_SECURITY_JWT_AUDIENCE");
+        validateRequired(environment, "server.ssl.key-store", "SERVER_SSL_KEY_STORE_PATH");
+        validateRequired(environment, "server.ssl.key-store-password", "SERVER_SSL_KEY_STORE_PASSWORD");
+        validateRequired(environment, "server.ssl.trust-store", "SERVER_SSL_TRUST_STORE_PATH");
+        validateRequired(environment, "server.ssl.trust-store-password", "SERVER_SSL_TRUST_STORE_PASSWORD");
+        if (!Boolean.parseBoolean(environment.getProperty("server.ssl.enabled", "false"))) {
+            throw new IllegalStateException("Production HTTPS must be enabled (SERVER_SSL_ENABLED)");
+        }
+        if (!"want".equalsIgnoreCase(environment.getProperty("server.ssl.client-auth", ""))) {
+            throw new IllegalStateException(
+                "Production TLS must request client certificates for route-level mTLS (SERVER_SSL_CLIENT_AUTH=want)"
+            );
+        }
         if (!Boolean.parseBoolean(environment.getProperty("spring.data.mongodb.ssl.enabled", "true"))) {
             throw new IllegalStateException("Production MongoDB connections must enable TLS (MONGODB_SSL_ENABLED)");
         }

@@ -11,22 +11,5 @@
         </introspection-scope>
       </schema-mapping>
     </data-source>
-    <data-source name="general-contracts@localhost" uuid="ed4195cc-c9d9-4514-bdec-c3e9f0c88e63">
-      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MONGO" />
-      <schema-mapping />
-      <ssh-properties>
-        <enabled>true</enabled>
-      </ssh-properties>
-    </data-source>
-    <data-source name="mongodb://localhost/general-contracts [DEBUG]" uuid="1fad739b-eb0d-4822-9674-a8183a2df9e8">
-      <database-info product="Mongo DB" version="8.3.4" jdbc-version="4.2" driver-name="MongoDB JDBC Driver" driver-version="1.24" dbms="MONGO" exact-version="8.3.4" exact-driver-version="1.24" />
-      <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
-      <auth-provider>no-auth</auth-provider>
-      <schema-mapping>
-        <introspection-scope>
-          <node kind="schema" qname="@" />
-        </introspection-scope>
-      </schema-mapping>
-    </data-source>
   </component>
 </project>

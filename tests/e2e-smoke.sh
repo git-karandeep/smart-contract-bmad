@@ -2,8 +2,6 @@
 set -euo pipefail
 
 compose=(docker compose -p "smart-contracts-e2e-${BASHPID:-$$}-${RANDOM}" -f deployment/docker-compose.yml)
-app_user="${APP_SECURITY_USERNAME:-local-dev}"
-app_password="${APP_SECURITY_PASSWORD:-local-dev-only}"
 export APP_HOST_PORT="${APP_HOST_PORT:-28443}"
 export MONGODB_HOST_PORT="${MONGODB_HOST_PORT:-28017}"
 export KAFKA_HOST_PORT="${KAFKA_HOST_PORT:-29092}"
@@ -25,7 +23,7 @@ fi
 "${compose[@]}" up --build -d
 
 for attempt in $(seq 1 90); do
-  if curl --fail --silent --user "$app_user:$app_password" "http://127.0.0.1:${APP_HOST_PORT}/actuator/health/readiness" >/dev/null; then
+  if curl --fail --silent "http://127.0.0.1:${APP_HOST_PORT}/actuator/health/readiness" >/dev/null; then
     break
   fi
   if [[ "$attempt" -eq 90 ]]; then
@@ -36,12 +34,75 @@ for attempt in $(seq 1 90); do
   sleep 5
 done
 
+health_headers="$(curl --silent --show-error --dump-header - --output /dev/null \
+  "http://127.0.0.1:${APP_HOST_PORT}/actuator/health")"
+grep -Fiq "Content-Security-Policy: default-src 'none'; base-uri 'none'; frame-ancestors 'none'" \
+  <<<"$health_headers"
+
 quorum_status="$("${compose[@]}" exec -T kafka kafka-metadata-quorum --bootstrap-server kafka:29092 describe --status)"
 grep -Eq '^LeaderId:[[:space:]]*1$' <<<"$quorum_status"
 
-chain_status="$(curl --fail --silent --user "$app_user:$app_password" "http://127.0.0.1:${APP_HOST_PORT}/api/chain/status")"
-[[ "$chain_status" == *'"chainId":31337'* ]]
-[[ "$chain_status" == *'"latestBlock":'* ]]
+denied_response="$(curl --silent --show-error --write-out '\n%{http_code}' \
+  "http://127.0.0.1:${APP_HOST_PORT}/api/chain/status")"
+[[ "${denied_response##*$'\n'}" == "401" ]]
+[[ "${denied_response%$'\n'*}" == *'"error":"unauthorized"'* ]]
+
+secure_test_vars=(
+  APP_SECURITY_E2E_URL
+  APP_SECURITY_E2E_BEARER_TOKEN
+  APP_SECURITY_E2E_CLIENT_CERT
+  APP_SECURITY_E2E_CLIENT_KEY
+  APP_SECURITY_E2E_UNTRUSTED_CLIENT_CERT
+  APP_SECURITY_E2E_UNTRUSTED_CLIENT_KEY
+  APP_SECURITY_E2E_CA
+)
+configured_secure_test_vars=0
+for variable in "${secure_test_vars[@]}"; do
+  if [[ -n "${!variable:-}" ]]; then
+    configured_secure_test_vars=$((configured_secure_test_vars + 1))
+  fi
+done
+if [[ "$configured_secure_test_vars" -ne 0 && "$configured_secure_test_vars" -ne "${#secure_test_vars[@]}" ]]; then
+  echo "Set all APP_SECURITY_E2E_* TLS/JWT variables to run the protected TLS check" >&2
+  exit 1
+fi
+if [[ "$configured_secure_test_vars" -eq "${#secure_test_vars[@]}" ]]; then
+  for file in "$APP_SECURITY_E2E_CLIENT_CERT" "$APP_SECURITY_E2E_CLIENT_KEY" \
+      "$APP_SECURITY_E2E_UNTRUSTED_CLIENT_CERT" "$APP_SECURITY_E2E_UNTRUSTED_CLIENT_KEY" \
+      "$APP_SECURITY_E2E_CA"; do
+    if [[ ! -r "$file" ]]; then
+      echo "Security E2E input file is missing or unreadable" >&2
+      exit 1
+    fi
+  done
+
+  secure_url="${APP_SECURITY_E2E_URL%/}/api/chain/status"
+  allowed_response="$(curl --silent --show-error --cacert "$APP_SECURITY_E2E_CA" \
+    --cert "$APP_SECURITY_E2E_CLIENT_CERT" --key "$APP_SECURITY_E2E_CLIENT_KEY" \
+    --header "Authorization: Bearer $APP_SECURITY_E2E_BEARER_TOKEN" \
+    --write-out '\n%{http_code}' "$secure_url")"
+  [[ "${allowed_response##*$'\n'}" == "200" ]]
+  [[ "${allowed_response%$'\n'*}" == *'"chainId":'* ]]
+
+  missing_certificate_response="$(curl --silent --show-error --cacert "$APP_SECURITY_E2E_CA" \
+    --header "Authorization: Bearer $APP_SECURITY_E2E_BEARER_TOKEN" \
+    --write-out '\n%{http_code}' "$secure_url")"
+  [[ "${missing_certificate_response##*$'\n'}" == "403" ]]
+
+  if curl --silent --show-error --cacert "$APP_SECURITY_E2E_CA" \
+      --cert "$APP_SECURITY_E2E_UNTRUSTED_CLIENT_CERT" --key "$APP_SECURITY_E2E_UNTRUSTED_CLIENT_KEY" \
+      --header "Authorization: Bearer $APP_SECURITY_E2E_BEARER_TOKEN" "$secure_url" >/dev/null 2>&1; then
+    echo "The protected TLS route accepted an untrusted client certificate" >&2
+    exit 1
+  fi
+
+  invalid_token_response="$(curl --silent --show-error --cacert "$APP_SECURITY_E2E_CA" \
+    --cert "$APP_SECURITY_E2E_CLIENT_CERT" --key "$APP_SECURITY_E2E_CLIENT_KEY" \
+    --header 'Authorization: Bearer invalid-e2e-token' \
+    --write-out '\n%{http_code}' "$secure_url")"
+  [[ "${invalid_token_response##*$'\n'}" == "401" ]]
+  [[ "${invalid_token_response%$'\n'*}" == *'"error":"unauthorized"'* ]]
+fi
 
 balance_response="$(curl --fail --silent --header 'Content-Type: application/json' \
   --data '{"jsonrpc":"2.0","method":"eth_getBalance","params":["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266","latest"],"id":1}' \

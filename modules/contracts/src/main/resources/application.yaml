@@ -5,6 +5,26 @@ spring:
     timeout-per-shutdown-phase: 20s
   aop:
     proxy-target-class: true
+  security:
+    ssl:
+      enabled: ${SPRING_SECURITY_SSL_ENABLED:false}
+      keystore:
+        location: ${SPRING_SECURITY_SSL_KEYSTORE_LOCATION:}
+        type: ${SPRING_SECURITY_SSL_KEYSTORE_TYPE:PKCS12}
+        provider: ${SPRING_SECURITY_SSL_KEYSTORE_PROVIDER:}
+        password: ${SPRING_SECURITY_SSL_KEYSTORE_PASSWORD:}
+        key-password: ${SPRING_SECURITY_SSL_KEY_PASSWORD:}
+        key-alias: ${SPRING_SECURITY_SSL_KEY_ALIAS:}
+      truststore:
+        location: ${SPRING_SECURITY_SSL_TRUSTSTORE_LOCATION:}
+        type: ${SPRING_SECURITY_SSL_TRUSTSTORE_TYPE:PKCS12}
+        provider: ${SPRING_SECURITY_SSL_TRUSTSTORE_PROVIDER:}
+        password: ${SPRING_SECURITY_SSL_TRUSTSTORE_PASSWORD:}
+    api:
+      base-url: ${API_BASE_URL:}
+      check-server-cert: ${API_CHECK_SERVER_CERT:true}
+      headers:
+        Authorization: ${API_AUTHORIZATION:}
   data:
     mongodb:
       database: ${MONGODB_DATABASE:general-contracts}

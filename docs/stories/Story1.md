@@ -8,4 +8,4 @@ Integrate CI pipeline for ./gradlew check.
 Acceptance Criteria:  
 Gradle modules follow dependency rules.
 CI pipeline runs check successfully.
-Local environment is functional wit h docker-compose.
+Local environment is functional with docker-compose.

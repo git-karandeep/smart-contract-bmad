@@ -6,6 +6,8 @@ dependency-management = { id = "io.spring.dependency-management", version = "1.1
 web3j = "4.12.3"
 spring-kafka = "4.0.0"
 micrometer = "1.16.0"
+grpc = "1.68.0"
+protobuf = "4.29.3"
 
 [libraries]
 # Spring Boot
@@ -35,6 +37,15 @@ spring-security-test = { module = "org.springframework.security:spring-security-
 # Other
 lombok = { module = "org.projectlombok:lombok" }
 netty-handler = { module = "io.netty:netty-handler", version = "4.2.16.Final" }
+
+# gRPC
+grpc-netty = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+
+# WebClient
+spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
 
 # Testing
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.10.0" }

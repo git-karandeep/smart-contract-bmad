@@ -97,8 +97,6 @@ services:
       CHAIN_RPC_URL: http://anvil:8545
       CHAIN_ID: 31337
       SIGNER_MODE: local-dev-only
-      APP_SECURITY_USERNAME: ${APP_SECURITY_USERNAME:-local-dev}
-      APP_SECURITY_PASSWORD: ${APP_SECURITY_PASSWORD:-local-dev-only}
       CAMUNDA_GRPC_ADDRESS: http://zeebe:26500
       CAMUNDA_REST_ADDRESS: http://zeebe:8080
     depends_on:

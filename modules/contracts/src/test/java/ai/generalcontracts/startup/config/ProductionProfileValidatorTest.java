@@ -36,6 +36,10 @@ class ProductionProfileValidatorTest {
         assertThatThrownBy(() -> new ProductionProfileValidator(
             validEnvironment().withProperty("spring.data.mongodb.ssl.invalid-hostname-allowed", "true")
         )).hasMessageContaining("must validate the server hostname");
+
+        assertThatThrownBy(() -> new ProductionProfileValidator(
+            validEnvironment().withProperty("server.ssl.client-auth", "none")
+        )).hasMessageContaining("must request client certificates");
     }
 
     private static Stream<Arguments> requiredProperties() {
@@ -43,8 +47,12 @@ class ProductionProfileValidatorTest {
             Arguments.of("spring.data.mongodb.uri", "MONGODB_URI"),
             Arguments.of("chain.rpc-url", "CHAIN_RPC_URL"),
             Arguments.of("chain.signer.key-ref", "SIGNER_KEY_REF"),
-            Arguments.of("spring.security.user.name", "APP_SECURITY_USERNAME"),
-            Arguments.of("spring.security.user.password", "APP_SECURITY_PASSWORD")
+            Arguments.of("app.security.jwt.issuer", "APP_SECURITY_JWT_ISSUER"),
+            Arguments.of("app.security.jwt.audience", "APP_SECURITY_JWT_AUDIENCE"),
+            Arguments.of("server.ssl.key-store", "SERVER_SSL_KEY_STORE_PATH"),
+            Arguments.of("server.ssl.key-store-password", "SERVER_SSL_KEY_STORE_PASSWORD"),
+            Arguments.of("server.ssl.trust-store", "SERVER_SSL_TRUST_STORE_PATH"),
+            Arguments.of("server.ssl.trust-store-password", "SERVER_SSL_TRUST_STORE_PASSWORD")
         );
     }
 
@@ -53,8 +61,14 @@ class ProductionProfileValidatorTest {
             .withProperty("spring.data.mongodb.uri", "mongodb://example.invalid/db")
             .withProperty("chain.rpc-url", "http://127.0.0.1:8545")
             .withProperty("chain.signer.key-ref", "test-key-reference")
-            .withProperty("spring.security.user.name", "test-user")
-            .withProperty("spring.security.user.password", "test-password")
+            .withProperty("app.security.jwt.issuer", "https://issuer.example.invalid/")
+            .withProperty("app.security.jwt.audience", "contracts-api")
+            .withProperty("server.ssl.key-store", "file:/run/secrets/server-keystore.p12")
+            .withProperty("server.ssl.key-store-password", "test-key-store-password")
+            .withProperty("server.ssl.trust-store", "file:/run/secrets/client-truststore.p12")
+            .withProperty("server.ssl.trust-store-password", "test-trust-store-password")
+            .withProperty("server.ssl.enabled", "true")
+            .withProperty("server.ssl.client-auth", "want")
             .withProperty("spring.data.mongodb.ssl.enabled", "true")
             .withProperty("spring.data.mongodb.ssl.invalid-hostname-allowed", "false");
     }

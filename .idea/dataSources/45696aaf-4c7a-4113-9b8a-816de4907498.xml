@@ -6,7 +6,7 @@
     </root>
     <schema id="2" parent="1" name="admin"/>
     <schema id="3" parent="1" name="general-contracts">
-      <LastIntrospectionLocalTimestamp>2026-10-08.20:22:03</LastIntrospectionLocalTimestamp>
+      <LastIntrospectionLocalTimestamp>2026-10-10.00:46:16</LastIntrospectionLocalTimestamp>
     </schema>
     <schema id="4" parent="1" name="local"/>
     <table id="5" parent="3" name="orders"/>

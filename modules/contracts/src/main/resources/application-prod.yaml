@@ -2,10 +2,6 @@ spring:
   config:
     activate:
       on-profile: prod
-  security:
-    user:
-      name: ${APP_SECURITY_USERNAME:}
-      password: ${APP_SECURITY_PASSWORD:}
   data:
     mongodb:
       uri: ${MONGODB_URI:}
@@ -38,3 +34,20 @@ chain:
   signer:
     mode: ${SIGNER_MODE:vault}
     key-ref: ${SIGNER_KEY_REF:}
+
+app:
+  security:
+    jwt:
+      issuer: ${APP_SECURITY_JWT_ISSUER:}
+      audience: ${APP_SECURITY_JWT_AUDIENCE:}
+
+server:
+  ssl:
+    enabled: ${SERVER_SSL_ENABLED:true}
+    key-store: file:${SERVER_SSL_KEY_STORE_PATH:/run/secrets/server-keystore.p12}
+    key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD:}
+    key-store-type: PKCS12
+    trust-store: file:${SERVER_SSL_TRUST_STORE_PATH:/run/secrets/client-truststore.p12}
+    trust-store-password: ${SERVER_SSL_TRUST_STORE_PASSWORD:}
+    trust-store-type: PKCS12
+    client-auth: ${SERVER_SSL_CLIENT_AUTH:want}

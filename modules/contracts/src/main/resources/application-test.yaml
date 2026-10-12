@@ -13,10 +13,6 @@ spring:
         enabled: ${MONGODB_SSL_ENABLED:false}
         invalid-hostname-allowed: ${MONGODB_SSL_INVALID_HOSTNAME_ALLOWED:false}
         certificate: ${MONGODB_SSL_CERTIFICATE:}
-  security:
-    user:
-        name: test-user
-        password: test-only
   mongodb:
     uri: ${MONGODB_URI:mongodb://127.0.0.1:1/health-test?directConnection=true}
     database: ${MONGODB_DATABASE:general-contracts-test}
@@ -34,6 +30,8 @@ server:
 management:
   health:
     mongo:
+      enabled: false
+    camunda:
       enabled: false
 
 app:

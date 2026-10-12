@@ -10,8 +10,14 @@ dependencies {
     implementation(project(":modules:persistence-mongo"))
     implementation(libs.web3j.core)
     implementation(libs.spring.boot.starter.kafka)
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation(libs.micrometer.registry.prometheus)
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+    implementation(libs.spring.boot.starter.webflux)
+    implementation(libs.grpc.netty)
+    implementation(libs.grpc.protobuf)
+    implementation(libs.grpc.stub)
+    implementation(libs.protobuf.java)
 
     testImplementation(libs.spring.kafka.test)
 }

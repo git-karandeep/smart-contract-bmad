@@ -25,7 +25,7 @@ jobs:
         run: chmod +x gradlew
       - name: Install contract tooling
         run: npm ci
-      - name: Gradle unit, integration, API, and verification tasks
+      - name: Gradle security, unit, integration, API, and verification tasks
         run: ./gradlew --no-daemon test integrationTest apiTest check
       - name: Compile and test Solidity
         run: npm run contracts:compile && npm run contracts:test
