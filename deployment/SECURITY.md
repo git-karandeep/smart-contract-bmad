@@ -18,6 +18,8 @@ The `prod` profile fails startup when these properties are missing, HTTPS is dis
 
 The `local` Compose deployment deliberately remains plain HTTP on a loopback-published port and has no identity provider or default password. It is a development stack, not a secure production model; its protected routes fail closed. Do not expose it to a shared/public network.
 
+Application responses set the exact API policy `Content-Security-Policy: default-src 'none'; base-uri 'none'; frame-ancestors 'none'` and the configured content-type, frame, referrer, and permissions headers. No browser client or external resource allowlist is defined. Changes to this policy require an explicit review and test update; the security test and local smoke check assert the full CSP value.
+
 ## Rotation and compromise response
 
 The application reads keystore/truststore material at startup. Updating mounted files alone does not rotate a running instance.
@@ -40,5 +42,7 @@ The repository's Docker Compose smoke test always confirms public health behavio
 - `APP_SECURITY_E2E_CLIENT_CERT`, `APP_SECURITY_E2E_CLIENT_KEY`: authorized test client certificate and private key
 - `APP_SECURITY_E2E_UNTRUSTED_CLIENT_CERT`, `APP_SECURITY_E2E_UNTRUSTED_CLIENT_KEY`: test client certificate and key signed by an untrusted CA
 - `APP_SECURITY_E2E_CA`: CA bundle used by curl to validate the application server certificate
+
+The script fails if only part of the protected-test fixture set is supplied. It sends the configured short-lived bearer token to the authorized and missing-certificate cases, uses a fixed deliberately invalid token for the 401 case, and does not print bearer values. The health-response CSP check requires exact directive equality; it will fail if directives are duplicated, broadened, or changed without updating reviewed expectations.
 
 The script verifies the authorized request, requests with no certificate and an untrusted certificate, and a request with an invalid bearer token. It never prints the provided token or key. Do not use production credentials or certificates for this test; store ephemeral test values in the CI secret manager and ensure test JWTs and certificates have narrow scope and short lifetimes.

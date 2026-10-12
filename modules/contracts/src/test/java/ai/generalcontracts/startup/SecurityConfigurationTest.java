@@ -97,9 +97,7 @@ class SecurityConfigurationTest {
         mockMvc.perform(get("/actuator/health"))
             .andExpect(status().isOk())
             .andExpect(header().string("Content-Security-Policy",
-                org.hamcrest.Matchers.containsString(
-                    "default-src 'none'; base-uri 'none'; frame-ancestors 'none'"
-                )));
+                "default-src 'none'; base-uri 'none'; frame-ancestors 'none'"));
 
         mockMvc.perform(get("/unlisted"))
             .andExpect(status().isUnauthorized())
@@ -214,6 +212,8 @@ class SecurityConfigurationTest {
 
         mockMvc.perform(get("/orders"))
             .andExpect(status().isUnauthorized())
+            .andExpect(header().string("Content-Security-Policy",
+                "default-src 'none'; base-uri 'none'; frame-ancestors 'none'"))
             .andExpect(header().string("X-Content-Type-Options", "nosniff"))
             .andExpect(header().string("X-Frame-Options", "DENY"))
             .andExpect(header().string("Referrer-Policy", "strict-origin-when-cross-origin"))

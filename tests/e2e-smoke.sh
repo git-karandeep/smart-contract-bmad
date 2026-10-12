@@ -36,8 +36,17 @@ done
 
 health_headers="$(curl --silent --show-error --dump-header - --output /dev/null \
   "http://127.0.0.1:${APP_HOST_PORT}/actuator/health")"
-grep -Fiq "Content-Security-Policy: default-src 'none'; base-uri 'none'; frame-ancestors 'none'" \
-  <<<"$health_headers"
+awk -F ': ' '
+  tolower($1) == "content-security-policy" {
+    count++
+    value = $2
+    sub(/\r$/, "", value)
+    if (value == "default-src '\''none'\''; base-uri '\''none'\''; frame-ancestors '\''none'\''") {
+      valid = 1
+    }
+  }
+  END { exit !(count == 1 && valid) }
+' <<<"$health_headers"
 
 quorum_status="$("${compose[@]}" exec -T kafka kafka-metadata-quorum --bootstrap-server kafka:29092 describe --status)"
 grep -Eq '^LeaderId:[[:space:]]*1$' <<<"$quorum_status"
@@ -79,19 +88,20 @@ if [[ "$configured_secure_test_vars" -eq "${#secure_test_vars[@]}" ]]; then
   secure_url="${APP_SECURITY_E2E_URL%/}/api/chain/status"
   allowed_response="$(curl --silent --show-error --cacert "$APP_SECURITY_E2E_CA" \
     --cert "$APP_SECURITY_E2E_CLIENT_CERT" --key "$APP_SECURITY_E2E_CLIENT_KEY" \
-    --header "Authorization: Bearer $APP_SECURITY_E2E_BEARER_TOKEN" \
+    --header "Authorization: Bearer ${APP_SECURITY_E2E_BEARER_TOKEN}" \
     --write-out '\n%{http_code}' "$secure_url")"
   [[ "${allowed_response##*$'\n'}" == "200" ]]
   [[ "${allowed_response%$'\n'*}" == *'"chainId":'* ]]
 
   missing_certificate_response="$(curl --silent --show-error --cacert "$APP_SECURITY_E2E_CA" \
-    --header "Authorization: Bearer $APP_SECURITY_E2E_BEARER_TOKEN" \
+    --header "Authorization: Bearer ${APP_SECURITY_E2E_BEARER_TOKEN}" \
     --write-out '\n%{http_code}' "$secure_url")"
   [[ "${missing_certificate_response##*$'\n'}" == "403" ]]
 
   if curl --silent --show-error --cacert "$APP_SECURITY_E2E_CA" \
       --cert "$APP_SECURITY_E2E_UNTRUSTED_CLIENT_CERT" --key "$APP_SECURITY_E2E_UNTRUSTED_CLIENT_KEY" \
-      --header "Authorization: Bearer $APP_SECURITY_E2E_BEARER_TOKEN" "$secure_url" >/dev/null 2>&1; then
+      --header "Authorization: Bearer ${APP_SECURITY_E2E_BEARER_TOKEN}" \
+      "$secure_url" >/dev/null 2>&1; then
     echo "The protected TLS route accepted an untrusted client certificate" >&2
     exit 1
   fi

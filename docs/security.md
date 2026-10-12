@@ -37,7 +37,7 @@ The `local` and `test` profiles retain their existing HTTP transport and do not 
 
 ## Headers, CSP, and audit
 
-Responses use `Content-Security-Policy: default-src 'none'; base-uri 'none'; frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and a restrictive `Permissions-Policy`. There is no browser client or documented third-party resource allowlist; add a narrower reviewed policy before introducing one.
+Responses use exactly `Content-Security-Policy: default-src 'none'; base-uri 'none'; frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy: camera=(), microphone=(), geolocation=()`. No script, style, image, or frame source is allowed by CSP. There is no browser client or documented third-party resource allowlist; add a narrower reviewed policy before introducing one. The API response policy is tested for exact equality to prevent conflicting or unreviewed directives.
 
 Security decision logs record the fixed route/permission category and allow/deny result with the validated correlation identifier from `RequestCorrelationFilter`. They do not log principal/tenant/asset identifiers, request bodies, credentials, certificates, token contents, or exception messages. Request-derived correlation values are bounded and character-filtered. Error bodies are generic.
 
@@ -67,9 +67,13 @@ From the repository root, run:
 ```powershell
 .\gradlew.bat :modules:contracts:test --no-daemon
 .\gradlew.bat :modules:contracts:apiTest :modules:contracts:integrationTest --no-daemon
+.\gradlew.bat :modules:contracts:test :modules:contracts:apiTest :modules:contracts:integrationTest --no-daemon
+npm run contracts:compile
+npm run contracts:test
+npm run contracts:lint
 bash tests/e2e-smoke.sh
 ```
 
-The first command covers filter order, route inventory, authorization, safe failures, headers/CSP, production-profile requirements, and asset/tenant decisions. The API/integration tasks cover controller and messaging behavior. The Docker smoke test requires Docker Compose, Node.js 22/npm, Bash, and curl; it verifies that the local stack's health route is public while protected API access fails closed. For live protected TLS checks, supply the complete `APP_SECURITY_E2E_*` test issuer, trusted/untrusted client certificate, and CA set described in [deployment security operations](../deployment/SECURITY.md).
+The Gradle security tests cover filter order, route inventory, authorization, safe failures, exact CSP and other security headers, production-profile requirements, JWT claims and token types, and asset/tenant decisions. The API/integration tasks cover controller and messaging behavior. Contract commands require Node.js 22/npm. The Docker smoke test requires Docker Compose, Node.js 22/npm, Bash, and curl; it verifies the exact CSP, public health route, and fail-closed protected API access. For live protected TLS checks, supply the complete `APP_SECURITY_E2E_*` test issuer, trusted/untrusted client certificate, and CA set described in [deployment security operations](../deployment/SECURITY.md). These protected external fixtures are opt-in and were not exercised unless specifically provisioned.
 
 CI retains its existing failure thresholds: npm audit fails at high severity, Trivy filesystem and image scans fail on high/critical unfixed findings, and Gitleaks fails on detected secrets. Do not weaken those thresholds to make a change pass. These scans and tests do not replace an identity-provider review, production truststore validation, contract audit, threat model, or incident exercise.

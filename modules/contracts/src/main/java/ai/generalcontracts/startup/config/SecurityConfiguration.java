@@ -34,14 +34,7 @@ import static ai.generalcontracts.startup.util.JWTDecode.jwtValidators;
 public class SecurityConfiguration {
 
     private static final String CSP =
-            "default-src 'none'; base-uri 'none'; frame-ancestors 'none' ;" +
-                    "script-src 'self'  'unsafe-inline';" +
-                    "style-src 'self'  'unsafe-inline';" +
-                    "script-src 'self'  ;" +
-                    "style-src 'self'  ;" +
-                    "img-src 'self'  https:;" +
-                    "frame-ancestors 'self' ;" +
-                    "object-src 'self'";
+            "default-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 
     private final JWTDecode jwtDecode;
     private final ConfigProperties configProperties;
