@@ -9,6 +9,8 @@
 | **Domain (reference)** | Tokenized asset transfer with escrowed settlement |
 | **Runtime** | Java 21, spring boot 4.x |
 
+![Animated BMAD workflow from project brief through API spec, PRD, architecture, and implementation, with the settlement flow and collaborating agents](docs/assets/bmad-enterprise-blockchain-flow.gif)
+
 ## Documentation map
 
 - [Project brief](docs/brief/index.md)
