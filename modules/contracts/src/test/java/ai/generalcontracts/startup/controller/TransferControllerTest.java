@@ -63,6 +63,20 @@ class TransferControllerTest {
         );
     }
 
+    @Test
+    void returnsStatusOnlyForTheInitiatingPrincipalAndTenantAfterReadEntitlement() {
+        TransferInstruction instruction = instruction();
+        instruction.setInitiatingPrincipal("principal-1");
+        instruction.setTenantId("tenant-1");
+        when(lifecycle.get("transfer-1")).thenReturn(instruction);
+
+        assertEquals(TransferStatus.RECEIVED, controller.get("transfer-1", authentication()).status());
+        verify(entitlementGuard).requirePermission("tenant-1", instruction.getSourceWallet(), AssetPermission.READ);
+
+        instruction.setInitiatingPrincipal("someone-else");
+        assertThrows(ResponseStatusException.class, () -> controller.get("transfer-1", authentication()));
+    }
+
     private TransferRequest request() {
         return new TransferRequest(
             "0x1111111111111111111111111111111111111111",

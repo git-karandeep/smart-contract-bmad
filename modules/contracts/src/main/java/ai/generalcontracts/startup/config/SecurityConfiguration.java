@@ -5,24 +5,30 @@ import ai.generalcontracts.startup.config.filters.CipherValidationFilter;
 import ai.generalcontracts.startup.observability.SecurityAuditLogger;
 import ai.generalcontracts.startup.security.ClientCertificateFilter;
 import ai.generalcontracts.startup.util.JWTDecode;
+import java.util.function.Supplier;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.lang.Nullable;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 
@@ -75,6 +81,8 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/orders").access(jwtDecode.audited("SCOPE_ORDER_READ", auditLogger))
                         .requestMatchers(HttpMethod.POST, "/orders").access(jwtDecode.audited("SCOPE_ORDER_WRITE", auditLogger))
                         .requestMatchers(HttpMethod.GET, "/api/chain/status").access(jwtDecode.audited("SCOPE_CHAIN_STATUS_READ", auditLogger))
+                        .requestMatchers(HttpMethod.POST, "/api/transfers").access(SecurityConfiguration::isJwtPrincipal)
+                        .requestMatchers(HttpMethod.GET, "/api/transfers/*").access(SecurityConfiguration::isJwtPrincipal)
                         .requestMatchers("/error").denyAll()
                         .anyRequest().denyAll()
                 )
@@ -112,6 +120,14 @@ public class SecurityConfiguration {
                 BearerTokenAuthenticationFilter.class
         );
         return http.build();
+    }
+
+    private static AuthorizationDecision isJwtPrincipal(
+            Supplier<? extends Authentication> authentication,
+            RequestAuthorizationContext context
+    ) {
+        Authentication current = authentication.get();
+        return new AuthorizationDecision(current instanceof JwtAuthenticationToken && current.isAuthenticated());
     }
 
     @Bean

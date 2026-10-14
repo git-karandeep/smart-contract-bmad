@@ -31,6 +31,8 @@ public final class ClientCertificateFilter extends OncePerRequestFilter {
         }
         return !(path.equals("/orders")
             || path.equals("/api/chain/status")
+            || path.equals("/api/transfers")
+            || path.startsWith("/api/transfers/")
             || path.equals("/actuator")
             || path.startsWith("/actuator/"));
     }
