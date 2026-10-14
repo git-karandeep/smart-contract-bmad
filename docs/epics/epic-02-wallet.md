@@ -753,7 +753,7 @@ Given a transfer that succeeds, fails, or enters review, then its material workf
 * Operational alerts, recovery procedures, and workflow documentation are available.
 
 
-Sequence of STories:
+Sequence of Stories:
 | Order | Story ID   | Story                                                       | Primary component            |
 | ----: | ---------  | ----------------------------------------------------------- | ---------------------------- |
 |     1 | Epic-02.01 | Create transfer instruction API and database model          | Spring Boot / MongoDB     |
