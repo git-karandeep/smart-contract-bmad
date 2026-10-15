@@ -4,9 +4,6 @@ useDefault = true
 [allowlist]
 description = "Generated dependency, build, and compiler output"
 paths = [
-  '''(^|/)''',
-  '''(^|/)modules/''',
-  '''(^|/)scripts/''',
   '''(^|/)node_modules/''',
   '''(^|/)\.gradle/''',
   '''(^|/)build/''',
