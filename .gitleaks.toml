@@ -11,8 +11,8 @@ paths = [
   '''(^|/)cache/''',
   '''(^|/)coverage/''',
   '''(^|/)out/''',
-  '''^_bmad/_config/files-manifest\.csv$''',
-  '''^docs/stories/.*\.md$''',
-  '''^README\.md$''',
-  '''^tests/e2e-smoke\.sh$'''
+  '''(^|/)_bmad/_config/files-manifest\.csv$''',
+  '''(^|/)docs/stories/.*\.md$''',
+  '''(^|/)README\.md$''',
+  '''(^|/)tests/e2e-smoke\.sh$'''
 ]
