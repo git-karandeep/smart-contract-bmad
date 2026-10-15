@@ -17,6 +17,7 @@ import ai.generalcontracts.startup.transfer.TransferInstructionRepository;
 import ai.generalcontracts.startup.transfer.TransferStatus;
 import ai.generalcontracts.startup.transfer.WorkflowLaunchState;
 import java.util.Optional;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,6 +101,39 @@ class TransferLifecycleServiceTest {
 
         assertEquals(TransferStatus.VALIDATING, updated.getStatus());
         verify(repository).save(received);
+    }
+
+    @Test
+    void permitsCancellationFromReadyButNotAfterSubmissionHasStarted() {
+        assertThrows(IllegalArgumentException.class, () -> service.transition(
+            "transfer-id", TransferStatus.SUBMISSION_IN_PROGRESS, TransferStatus.CANCELLED, null, null
+        ));
+        TransferInstruction ready = instruction("10.25");
+        ready.setStatus(TransferStatus.READY_FOR_EXECUTION);
+        when(repository.findById("transfer-id")).thenReturn(Optional.of(ready));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TransferInstruction cancelled = service.transition(
+            "transfer-id", TransferStatus.READY_FOR_EXECUTION, TransferStatus.CANCELLED, "TRANSFER_CANCELLED", null
+        );
+
+        assertEquals(TransferStatus.CANCELLED, cancelled.getStatus());
+    }
+
+    @Test
+    void convertsAnOptimisticLockRaceIntoAStateConflict() {
+        TransferInstruction ready = instruction("10.25");
+        ready.setStatus(TransferStatus.READY_FOR_EXECUTION);
+        when(repository.findById("transfer-id")).thenReturn(Optional.of(ready));
+        when(repository.save(any())).thenThrow(new OptimisticLockingFailureException("Concurrent state update"));
+
+        assertThrows(ResponseStatusException.class, () -> service.transition(
+            "transfer-id",
+            TransferStatus.READY_FOR_EXECUTION,
+            TransferStatus.CANCELLED,
+            "TRANSFER_CANCELLED",
+            null
+        ));
     }
 
     @Test

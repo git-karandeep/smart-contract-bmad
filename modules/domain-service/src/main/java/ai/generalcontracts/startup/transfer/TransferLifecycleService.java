@@ -231,15 +231,20 @@ public class TransferLifecycleService {
         return switch (from) {
             case RECEIVED -> to == TransferStatus.VALIDATING || to == TransferStatus.CANCELLED
                 || to == TransferStatus.WORKFLOW_START_UNKNOWN;
+            case WORKFLOW_START_UNKNOWN -> to == TransferStatus.CANCELLED;
             case VALIDATING -> to == TransferStatus.VALIDATION_FAILED
+                || to == TransferStatus.CANCELLED
                 || to == TransferStatus.SCREENING_PENDING || to == TransferStatus.COMPLIANCE_HOLD;
             case SCREENING_PENDING -> to == TransferStatus.COMPLIANCE_APPROVED
                 || to == TransferStatus.COMPLIANCE_REJECTED || to == TransferStatus.MANUAL_REVIEW
                 || to == TransferStatus.COMPLIANCE_HOLD || to == TransferStatus.CANCELLED;
+            case VALIDATION_FAILED, COMPLIANCE_REJECTED, MANUAL_REVIEW, COMPLIANCE_HOLD ->
+                to == TransferStatus.CANCELLED;
             case COMPLIANCE_APPROVED -> to == TransferStatus.READY_FOR_EXECUTION
                 || to == TransferStatus.COMPLIANCE_HOLD || to == TransferStatus.CANCELLED;
             case READY_FOR_EXECUTION -> to == TransferStatus.SUBMISSION_IN_PROGRESS
-                || to == TransferStatus.TRANSACTION_UNKNOWN || to == TransferStatus.COMPLIANCE_HOLD;
+                || to == TransferStatus.TRANSACTION_UNKNOWN || to == TransferStatus.COMPLIANCE_HOLD
+                || to == TransferStatus.CANCELLED;
             case SUBMISSION_IN_PROGRESS -> to == TransferStatus.TRANSACTION_SUBMITTED
                 || to == TransferStatus.TRANSACTION_UNKNOWN;
             case TRANSACTION_SUBMITTED -> to == TransferStatus.TRANSACTION_PENDING

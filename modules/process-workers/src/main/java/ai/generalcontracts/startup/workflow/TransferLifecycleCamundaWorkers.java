@@ -82,6 +82,12 @@ public class TransferLifecycleCamundaWorkers {
         ));
     }
 
+    @JobWorker(type = "transfer-cancel", autoComplete = false)
+    public void cancel(JobClient client, ActivatedJob job) {
+        handlers.cancel(string(job, "instructionId"));
+        complete(client, job, Map.of());
+    }
+
     private void complete(JobClient client, ActivatedJob job, Map<String, Object> variables) {
         client.newCompleteCommand(job.getKey()).variables(variables).send().join();
     }

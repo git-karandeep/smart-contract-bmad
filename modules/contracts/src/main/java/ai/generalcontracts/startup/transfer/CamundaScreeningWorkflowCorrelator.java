@@ -15,15 +15,9 @@ public class CamundaScreeningWorkflowCorrelator implements ScreeningWorkflowCorr
     public void correlate(ScreeningResult result) {
         client.newPublishMessageCommand()
             .messageName(messageName(result))
-            .correlationKey(result.correlationId())
+            .correlationKey(result.instructionId() + ":" + result.screeningType().name())
             .messageId(result.providerId() + ":" + result.messageId())
-            .variables(Map.of(
-                "instructionId", result.instructionId(),
-                "screeningRequestId", result.screeningRequestId(),
-                "screeningType", result.screeningType().name(),
-                "screeningDecision", result.decision().name(),
-                "screenedAt", result.screenedAt().toString()
-            ))
+            .variables(Map.of())
             .send()
             .join();
     }

@@ -19,10 +19,29 @@
   <bpmn:message id="transactionResultMessage" name="TransferTransactionResult">
     <bpmn:extensionElements><zeebe:subscription correlationKey="=instructionId"/></bpmn:extensionElements>
   </bpmn:message>
+  <bpmn:message id="transferCancellationMessage" name="TransferCancellationRequested">
+    <bpmn:extensionElements><zeebe:subscription correlationKey="=instructionId"/></bpmn:extensionElements>
+  </bpmn:message>
   <bpmn:process id="transfer-lifecycle" name="Token transfer lifecycle" isExecutable="true">
     <bpmn:startEvent id="transferReceived" name="Transfer instruction received">
       <bpmn:messageEventDefinition messageRef="transferInstructionMessage"/>
     </bpmn:startEvent>
+    <bpmn:subProcess id="transferCancellation" name="Handle pre-submission cancellation" triggeredByEvent="true">
+      <bpmn:startEvent id="cancellationRequested" name="Cancellation requested" isInterrupting="false">
+        <bpmn:messageEventDefinition messageRef="transferCancellationMessage"/>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="cancelTransfer" name="Cancel transfer before submission">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="transfer-cancel" retries="3"/>
+          <zeebe:ioMapping>
+            <zeebe:input source="=instructionId" target="instructionId"/>
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="cancellationHandled" name="Cancellation handled"/>
+      <bpmn:sequenceFlow id="flowCancellationRequested" sourceRef="cancellationRequested" targetRef="cancelTransfer"/>
+      <bpmn:sequenceFlow id="flowCancellationHandled" sourceRef="cancelTransfer" targetRef="cancellationHandled"/>
+    </bpmn:subProcess>
     <bpmn:serviceTask id="validateTransfer" name="Validate transfer">
       <bpmn:extensionElements><zeebe:taskDefinition type="transfer-validate" retries="3"/></bpmn:extensionElements>
     </bpmn:serviceTask>

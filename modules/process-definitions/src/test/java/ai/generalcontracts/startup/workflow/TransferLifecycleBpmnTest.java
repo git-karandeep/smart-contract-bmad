@@ -54,6 +54,47 @@ class TransferLifecycleBpmnTest {
         assertEquals(3.0, (Double) xpath.evaluate(
             "count(//bpmn:message[contains(@name, 'ScreeningResult')])", document, XPathConstants.NUMBER
         ));
+        assertEquals("=instructionId", xpath.evaluate(
+            "string(//bpmn:message[@name='TransferInstructionReceived']/bpmn:extensionElements/"
+                + "zeebe:subscription/@correlationKey)",
+            document, XPathConstants.STRING
+        ));
+        assertEquals("=instructionId", xpath.evaluate(
+            "string(//bpmn:message[@name='TransferCancellationRequested']/bpmn:extensionElements/"
+                + "zeebe:subscription/@correlationKey)",
+            document, XPathConstants.STRING
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:message[@name='KycScreeningResult']/bpmn:extensionElements/"
+                + "zeebe:subscription[@correlationKey='=kycCorrelationKey'])",
+            document, XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:message[@name='AmlScreeningResult']/bpmn:extensionElements/"
+                + "zeebe:subscription[@correlationKey='=amlCorrelationKey'])",
+            document, XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:message[@name='SanctionsScreeningResult']/bpmn:extensionElements/"
+                + "zeebe:subscription[@correlationKey='=sanctionsCorrelationKey'])",
+            document, XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:subProcess[@id='transferCancellation' and @triggeredByEvent='true']"
+                + "/bpmn:startEvent[@id='cancellationRequested' and @isInterrupting='false']"
+                + "/bpmn:messageEventDefinition[@messageRef='transferCancellationMessage'])",
+            document, XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:serviceTask[@id='cancelTransfer']"
+                + "/bpmn:extensionElements/zeebe:taskDefinition[@type='transfer-cancel' and @retries='3'])",
+            document, XPathConstants.BOOLEAN
+        ));
+        assertEquals(0.0, (Double) xpath.evaluate(
+            "count(//bpmn:serviceTask/bpmn:extensionElements/zeebe:taskDefinition[not(@retries) "
+                + "or number(@retries) < 1 or number(@retries) > 3])",
+            document, XPathConstants.NUMBER
+        ));
         assertEquals(3.0, (Double) xpath.evaluate(
             "count(//bpmn:intermediateCatchEvent[bpmn:timerEventDefinition])", document, XPathConstants.NUMBER
         ));
@@ -84,6 +125,15 @@ class TransferLifecycleBpmnTest {
                 + "@targetRef='transactionResult' and "
                 + "contains(bpmn:conditionExpression, 'reconciliationPending')]",
             document, XPathConstants.NODE
+        ));
+        assertEquals("flowReconciliationMatch", xpath.evaluate(
+            "string(//bpmn:sequenceFlow[@targetRef='transferCompleted']/@id)",
+            document, XPathConstants.STRING
+        ));
+        assertEquals(0.0, (Double) xpath.evaluate(
+            "count(//bpmn:sequenceFlow[@sourceRef="
+                + "//bpmn:endEvent[@id!='transferCompleted']/@id])",
+            document, XPathConstants.NUMBER
         ));
     }
 

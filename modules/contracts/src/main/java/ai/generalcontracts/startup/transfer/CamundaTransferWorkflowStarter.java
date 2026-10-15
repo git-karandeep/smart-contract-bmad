@@ -19,12 +19,6 @@ public final class CamundaTransferWorkflowStarter implements TransferWorkflowSta
             .messageId("transfer-instruction:" + instruction.getInstructionId())
             .variables(Map.of(
                 "instructionId", instruction.getInstructionId(),
-                "correlationId", instruction.getCorrelationId(),
-                "sourceWallet", instruction.getSourceWallet(),
-                "destinationWallet", instruction.getDestinationWallet(),
-                "tokenIdentifier", instruction.getTokenIdentifier(),
-                "amount", instruction.getAmount(),
-                "networkId", instruction.getNetworkId(),
                 "kycCorrelationKey", instruction.getInstructionId() + ":KYC",
                 "amlCorrelationKey", instruction.getInstructionId() + ":AML",
                 "sanctionsCorrelationKey", instruction.getInstructionId() + ":SANCTIONS"

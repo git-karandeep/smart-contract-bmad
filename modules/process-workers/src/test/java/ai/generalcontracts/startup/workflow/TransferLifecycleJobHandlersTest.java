@@ -7,7 +7,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +30,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 class TransferLifecycleJobHandlersTest {
     @Test
@@ -311,6 +315,93 @@ class TransferLifecycleJobHandlersTest {
         assertEquals(hash, submission.get("transactionHash"));
         assertEquals(hash, fixture.instruction.getTransactionHash());
         assertEquals(TransferStatus.TRANSACTION_UNKNOWN, fixture.instruction.getStatus());
+    }
+
+    @Test
+    void cancellationTransitionsAReadyTransferToCancelled() {
+        Fixture fixture = new Fixture(TransferStatus.READY_FOR_EXECUTION);
+
+        Map<String, Object> cancellation = fixture.handlers().cancel("transfer-1");
+
+        assertEquals("CANCELLED", cancellation.get("cancellationOutcome"));
+        assertEquals(TransferStatus.CANCELLED, fixture.instruction.getStatus());
+        verify(fixture.lifecycle).transition(
+            "transfer-1",
+            TransferStatus.READY_FOR_EXECUTION,
+            TransferStatus.CANCELLED,
+            "TRANSFER_CANCELLED",
+            null
+        );
+    }
+
+    @Test
+    void cancellationAfterSubmissionStartsLeavesTransactionMonitoringUndisturbed() {
+        Fixture fixture = new Fixture(TransferStatus.SUBMISSION_IN_PROGRESS);
+
+        Map<String, Object> cancellation = fixture.handlers().cancel("transfer-1");
+
+        assertEquals("NOT_CANCELLED", cancellation.get("cancellationOutcome"));
+        assertEquals("SUBMISSION_ALREADY_STARTED", cancellation.get("cancellationReasonCode"));
+        assertEquals(TransferStatus.SUBMISSION_IN_PROGRESS, fixture.instruction.getStatus());
+        verify(fixture.lifecycle, never()).transition(
+            anyString(),
+            any(TransferStatus.class),
+            any(TransferStatus.class),
+            nullable(String.class),
+            nullable(String.class)
+        );
+    }
+
+    @Test
+    void cancellationLosesTheAtomicRaceWhenSubmissionClaimsTheInstructionFirst() {
+        Fixture fixture = new Fixture(TransferStatus.READY_FOR_EXECUTION);
+        doAnswer(invocation -> {
+            fixture.instruction.setStatus(TransferStatus.SUBMISSION_IN_PROGRESS);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Transfer state changed");
+        }).when(fixture.lifecycle).transition(
+            "transfer-1",
+            TransferStatus.READY_FOR_EXECUTION,
+            TransferStatus.CANCELLED,
+            "TRANSFER_CANCELLED",
+            null
+        );
+
+        Map<String, Object> cancellation = fixture.handlers().cancel("transfer-1");
+
+        assertEquals("NOT_CANCELLED", cancellation.get("cancellationOutcome"));
+        assertEquals("SUBMISSION_ALREADY_STARTED", cancellation.get("cancellationReasonCode"));
+        assertEquals(TransferStatus.SUBMISSION_IN_PROGRESS, fixture.instruction.getStatus());
+    }
+
+    @Test
+    void cancellationRetriesAConcurrentUpdateWhileTheTransferRemainsPreSubmission() {
+        Fixture fixture = new Fixture(TransferStatus.READY_FOR_EXECUTION);
+        java.util.concurrent.atomic.AtomicInteger attempts = new java.util.concurrent.atomic.AtomicInteger();
+        doAnswer(invocation -> {
+            if (attempts.getAndIncrement() == 0) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Concurrent state update");
+            }
+            fixture.instruction.setStatus(TransferStatus.CANCELLED);
+            return fixture.instruction;
+        }).when(fixture.lifecycle).transition(
+            "transfer-1",
+            TransferStatus.READY_FOR_EXECUTION,
+            TransferStatus.CANCELLED,
+            "TRANSFER_CANCELLED",
+            null
+        );
+
+        Map<String, Object> cancellation = fixture.handlers().cancel("transfer-1");
+
+        assertEquals("CANCELLED", cancellation.get("cancellationOutcome"));
+        assertEquals(TransferStatus.CANCELLED, fixture.instruction.getStatus());
+        verify(fixture.lifecycle, times(2)).transition(
+            "transfer-1",
+            TransferStatus.READY_FOR_EXECUTION,
+            TransferStatus.CANCELLED,
+            "TRANSFER_CANCELLED",
+            null
+        );
     }
 
     @Test

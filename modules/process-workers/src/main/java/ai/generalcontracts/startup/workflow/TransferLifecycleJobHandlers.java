@@ -237,6 +237,44 @@ public class TransferLifecycleJobHandlers {
         return submissionOutput("SUBMITTED", submission.transactionHash(), null);
     }
 
+    public Map<String, Object> cancel(String instructionId) {
+        for (int attempt = 0; attempt < 3; attempt++) {
+            TransferStatus status = instruction(instructionId).getStatus();
+            if (status == TransferStatus.CANCELLED) {
+                return cancellationOutput("CANCELLED", null);
+            }
+            if (!cancellableBeforeSubmission(status)) {
+                String reason = submissionStarted(status)
+                    ? "SUBMISSION_ALREADY_STARTED"
+                    : "TRANSFER_NOT_CANCELLABLE";
+                return cancellationOutput("NOT_CANCELLED", reason);
+            }
+
+            try {
+                lifecycle.transition(
+                    instructionId,
+                    status,
+                    TransferStatus.CANCELLED,
+                    "TRANSFER_CANCELLED",
+                    null
+                );
+                return cancellationOutput("CANCELLED", null);
+            } catch (ResponseStatusException concurrentTransition) {
+                TransferStatus currentStatus = instruction(instructionId).getStatus();
+                if (currentStatus == TransferStatus.CANCELLED) {
+                    return cancellationOutput("CANCELLED", null);
+                }
+                if (!cancellableBeforeSubmission(currentStatus)) {
+                    String reason = submissionStarted(currentStatus)
+                        ? "SUBMISSION_ALREADY_STARTED"
+                        : "TRANSFER_NOT_CANCELLABLE";
+                    return cancellationOutput("NOT_CANCELLED", reason);
+                }
+            }
+        }
+        return cancellationOutput("NOT_CANCELLED", "TRANSFER_STATE_CHANGED");
+    }
+
     public Map<String, Object> reconcile(
         String instructionId,
         String transactionHash,
@@ -502,6 +540,32 @@ public class TransferLifecycleJobHandlers {
             output.put("submissionReasonCode", reasonCode);
         }
         return output;
+    }
+
+    private Map<String, Object> cancellationOutput(String outcome, String reasonCode) {
+        Map<String, Object> output = output("cancellationOutcome", outcome);
+        if (reasonCode != null) {
+            output.put("cancellationReasonCode", reasonCode);
+        }
+        return output;
+    }
+
+    private boolean cancellableBeforeSubmission(TransferStatus status) {
+        return switch (status) {
+            case RECEIVED, WORKFLOW_START_UNKNOWN, VALIDATING, VALIDATION_FAILED, SCREENING_PENDING,
+                COMPLIANCE_APPROVED, COMPLIANCE_REJECTED, MANUAL_REVIEW, COMPLIANCE_HOLD,
+                READY_FOR_EXECUTION -> true;
+            default -> false;
+        };
+    }
+
+    private boolean submissionStarted(TransferStatus status) {
+        return switch (status) {
+            case SUBMISSION_IN_PROGRESS, TRANSACTION_SUBMITTED, TRANSACTION_PENDING, TRANSACTION_REVERTED,
+                TRANSACTION_UNKNOWN, TRANSACTION_CONFIRMED, RECONCILIATION_PENDING, RECONCILIATION_MISMATCH,
+                COMPLETED -> true;
+            default -> false;
+        };
     }
 
     private Map<String, Object> output(String key, Object value) {

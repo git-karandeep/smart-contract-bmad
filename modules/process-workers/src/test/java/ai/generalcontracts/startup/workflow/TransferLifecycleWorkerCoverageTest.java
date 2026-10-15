@@ -46,8 +46,41 @@ class TransferLifecycleWorkerCoverageTest {
         Document document = parse();
         var xpath = XPathFactory.newInstance().newXPath();
         xpath.setNamespaceContext(new TransferLifecycleBpmnTestNamespaceContext());
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:parallelGateway[@id='screeningJoin'])",
+            document,
+            XPathConstants.BOOLEAN
+        ));
+        assertEquals(9.0, (Double) xpath.evaluate(
+            "count(//bpmn:sequenceFlow[@targetRef='screeningJoin'])",
+            document,
+            XPathConstants.NUMBER
+        ));
 
         for (String screening : new String[] { "kyc", "aml", "sanctions" }) {
+            assertTrue((Boolean) xpath.evaluate(
+                "boolean(//bpmn:eventBasedGateway[@id='" + screening + "Wait'])",
+                document,
+                XPathConstants.BOOLEAN
+            ));
+            assertTrue((Boolean) xpath.evaluate(
+                "boolean(//bpmn:sequenceFlow[@sourceRef='" + screening + "Wait' and @targetRef='"
+                    + screening + "Result'])",
+                document,
+                XPathConstants.BOOLEAN
+            ));
+            assertTrue((Boolean) xpath.evaluate(
+                "boolean(//bpmn:sequenceFlow[@sourceRef='" + screening + "Wait' and @targetRef='"
+                    + screening + "Timeout'])",
+                document,
+                XPathConstants.BOOLEAN
+            ));
+            assertTrue((Boolean) xpath.evaluate(
+                "boolean(//bpmn:sequenceFlow[@sourceRef='" + screening + "Result' "
+                    + "and @targetRef='screeningJoin'])",
+                document,
+                XPathConstants.BOOLEAN
+            ));
             assertTrue((Boolean) xpath.evaluate(
                 "count(//bpmn:sequenceFlow[@sourceRef='" + screening
                     + "Timeout' and @targetRef='screeningJoin']) = 0",
@@ -81,15 +114,26 @@ class TransferLifecycleWorkerCoverageTest {
         Document document = parse();
         var xpath = XPathFactory.newInstance().newXPath();
         xpath.setNamespaceContext(new TransferLifecycleBpmnTestNamespaceContext());
-        for (String gateway : new String[] {
-            "validationGateway", "complianceGateway", "executionGateway", "submissionGateway",
-            "reconciliationGateway"
-        }) {
-            assertTrue((Boolean) xpath.evaluate(
-                "boolean(//bpmn:exclusiveGateway[@id='" + gateway + "']/@default)",
+        String[][] failClosedDefaults = {
+            { "validationGateway", "validationRejected" },
+            { "complianceGateway", "complianceRejected" },
+            { "executionGateway", "executionHeld" },
+            { "submissionGateway", "submissionUnknown" },
+            { "reconciliationGateway", "reconciliationHeld" }
+        };
+        for (String[] gateway : failClosedDefaults) {
+            String gatewayId = gateway[0];
+            String defaultFlow = (String) xpath.evaluate(
+                "string(//bpmn:exclusiveGateway[@id='" + gatewayId + "']/@default)",
                 document,
-                XPathConstants.BOOLEAN
-            ), gateway);
+                XPathConstants.STRING
+            );
+            assertTrue(!defaultFlow.isEmpty(), gatewayId);
+            assertEquals(gateway[1], xpath.evaluate(
+                "string(//bpmn:sequenceFlow[@id='" + defaultFlow + "']/@targetRef)",
+                document,
+                XPathConstants.STRING
+            ), gatewayId);
         }
     }
 
