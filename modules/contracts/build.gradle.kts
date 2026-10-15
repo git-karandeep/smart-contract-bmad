@@ -23,6 +23,12 @@ dependencies {
     implementation(libs.grpc.stub)
     implementation(libs.protobuf.java)
 
+    constraints {
+        implementation("org.bouncycastle:bcprov-jdk18on:1.85") {
+            because("Fixes CVE-2025-14813, CVE-2026-8763 and CVE-2026-13506 in transitive web3j dependency")
+        }
+    }
+
     testImplementation(libs.spring.kafka.test)
 }
 

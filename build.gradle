@@ -18,6 +18,14 @@ allprojects {
 }
 ext {
 	camundaVersion = "8.9.0"
+	// Security patch overrides for Spring Boot managed dependencies
+	set('spring-framework.version', '7.0.9')
+	set('tomcat.version', '11.0.25')
+	set('netty.version', '4.2.17.Final')
+	set('jackson-bom.version', '3.1.7')
+	set('jackson-2-bom.version', '2.21.7')
+	set('httpcore5.version', '5.4.3')
+	set('bouncycastle.version', '1.85')
 }
 springBoot {
 	mainClass = "ai.generalcontracts.startup.GeneralContractApplication"
@@ -57,7 +65,7 @@ subprojects {
 		implementation 'io.github.resilience4j:resilience4j-retry:2.4.0'
 		implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
 		implementation 'org.springframework.boot:spring-boot-starter-web'
-		implementation 'io.netty:netty-handler:4.2.16.Final'
+		implementation 'io.netty:netty-handler:4.2.17.Final'
 		implementation 'org.springframework.boot:spring-boot-starter-validation'
 		implementation 'org.springframework.boot:spring-boot-starter-aspectj'
 		implementation 'org.springframework.boot:spring-boot-starter-security'
