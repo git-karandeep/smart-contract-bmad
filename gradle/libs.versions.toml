@@ -6,7 +6,7 @@ dependency-management = { id = "io.spring.dependency-management", version = "1.1
 web3j = "4.12.3"
 spring-kafka = "4.0.0"
 micrometer = "1.16.0"
-grpc = "1.68.0"
+grpc = "1.75.0"
 protobuf = "4.29.3"
 
 [libraries]
@@ -36,7 +36,7 @@ spring-security-test = { module = "org.springframework.security:spring-security-
 
 # Other
 lombok = { module = "org.projectlombok:lombok" }
-netty-handler = { module = "io.netty:netty-handler", version = "4.2.16.Final" }
+netty-handler = { module = "io.netty:netty-handler", version = "4.2.17.Final" }
 
 # gRPC
 grpc-netty = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
