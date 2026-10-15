@@ -1,27 +1,28 @@
-# Story 2.16 — Verify end-to-end transfer security and failure handling
+# Story 2.16 — Complete end-to-end transfer security testing
 
-As a release owner,
-I want an automated end-to-end suite for the wallet transfer boundary,
-so that authentication, compliance gates, contract execution, and recovery work together without unsafe transfers.
+**Story Points:** 5
+
+As a product and compliance stakeholder,
+I want the complete transfer lifecycle exercised across success and failure paths,
+so that the platform demonstrates safe orchestration from instruction through reconciliation.
 
 ## Acceptance Criteria
 
-- The suite exercises an authorized successful transfer from instruction creation through screening, execution, finality, reconciliation, and completion.
-- It proves unauthenticated or unauthorized initiators, invalid instructions, provider-authentication failures, mismatched/duplicate messages, and rejected, review, or timed-out screening cannot submit a blockchain transaction.
-- It proves sanctions restrictions, stale compliance, changed transfer data, and newly recorded holds prevent execution.
-- It proves contract restrictions reject unauthorized transfers and blockchain revert, unknown outcome, and reconciliation mismatch do not produce a completed status.
-- It proves equivalent duplicate instructions and replayed messages do not create a second logical transfer or duplicate token movement.
-- Test reports and setup guidance identify required service/provider/chain substitutes and make clear which checks require an integration or controlled network environment.
-- The supported focused unit, integration, contract, and end-to-end suites pass; a failure in a covered security assertion fails the release check.
+- An end-to-end test proves an authorized, eligible instruction proceeds through mandatory approvals, submission, configured finality, and matching reconciliation to one completion.
+- End-to-end tests prove validation failure, screening rejection/review/timeout, unauthorized initiation, transaction revert, unknown outcome, and reconciliation mismatch never produce a false completion or unauthorized submission.
+- Duplicate requests and messages, late results, and recovery after interruption preserve a single logical transfer and transaction intent.
+- Tests verify sensitive identity and signing data are absent from API responses, workflow variables, logs, and audit payloads.
+- The suite uses deterministic provider fakes and a local/test chain or equivalent isolated integration environment; production credentials and networks are not required.
+- Test setup and execution are documented, repeatable in CI, and report failures with instruction/correlation identifiers but no secrets.
 
 ## Open Decisions
 
-- Confirm the supported integration environment and approved provider, signer, and blockchain test fixtures; use test credentials only and never weaken production security controls to make tests pass.
+- Confirm the supported CI integration environment and whether the final suite must exercise a deployed Camunda/Mongo/Kafka stack or may use approved in-process/test adapters for selected boundaries.
 
 ## Dependencies
 
-- Stories 2.1–2.15 must be implemented sufficiently to exercise the end-to-end transfer and security boundaries.
+- Stories 2.1–2.15 must provide the contracts, workflow, policy gates, adapters, persistence, finality, reconciliation, and audit behavior under test.
 
 ## References
 
-- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), Security Requirements, Error Handling and Recovery, Acceptance Criteria AC-001–AC-015, Definition of Done
+- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), Definition of Done, Non-Functional Requirements, AC-001–AC-015

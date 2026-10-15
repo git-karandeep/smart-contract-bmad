@@ -1,5 +1,7 @@
 # Story 2.2 — Validate wallet addresses and transfer eligibility
 
+**Story Points:** 3
+
 As the transfer workflow,
 I want each instruction checked against its network, token, wallet, and authorization rules,
 so that invalid or unauthorized transfers stop before compliance screening.
@@ -21,4 +23,3 @@ so that invalid or unauthorized transfers stop before compliance screening.
 ## References
 
 - Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), BR-002, Phase 2, FR-002, AC-009
-[]()[]()

@@ -1,27 +1,29 @@
-# Story 2.15 — Audit transfer decisions and monitor workflow health
+# Story 2.15 — Implement audit trail, monitoring, and alerts
 
-As a compliance or operations user,
-I want material transfer decisions and system failures traceable by instruction,
-so that investigations and operational response have reliable evidence.
+**Story Points:** 5
+
+As a compliance operations team,
+I want correlated audit records and operational signals for transfer processing,
+so that decisions, failures, and workflow health can be investigated without exposing secrets.
 
 ## Acceptance Criteria
 
-- Material state transitions, validation results, screening request/result references, compliance decisions, manual-review actions, transaction hashes, reconciliation results, and final outcomes are recorded with instruction and correlation identifiers.
-- Audit records are append-only or otherwise protected from unauthorized alteration and include actor/source and timestamp where applicable.
-- Logs, metrics, and traces connect API requests, Camunda instances, provider messages, Kafka events, and blockchain transactions without exposing private keys or unnecessary identity data.
-- Alerts cover at least screening timeouts/provider failures, transaction unknown/reverted outcomes, reconciliation mismatches, and workflow failures requiring operations.
-- Restricted manual-review and administrative actions are role controlled and auditable.
-- Operational dashboards and alert/runbook guidance explain actionable states without treating submission acknowledgment as transfer success.
-- Tests or documented checks verify correlation, sensitive-data redaction, audit durability, and alert triggering for representative failures.
+- Material instruction transitions, screening requests and decisions, transaction references, reconciliation outcomes, and terminal results are traceable by instruction ID.
+- Audit records preserve the actor/provider, timestamp, correlation identifiers, policy/version context, and outcome needed to explain each decision.
+- Audit records are append-only or otherwise protected from unauthorized alteration, and duplicate delivery does not create misleading duplicate decisions.
+- Operational signals expose configured workflow failures, screening timeouts, stuck transfers, unknown transactions, and reconciliation mismatches.
+- Logs and audit payloads minimize identity data and never expose private keys, credentials, or signing material.
+- Access to sensitive audit and administrative data follows the existing authentication, authorization, and audit controls.
+- Automated tests verify event correlation, sensitive-data redaction, and signals for representative failure paths.
 
 ## Open Decisions
 
-- Confirm audit retention/access policy, required event fields, monitoring/alerting destination, and the operational owners and escalation thresholds.
+- Confirm audit retention, access policy, append-only storage guarantee, alert destinations, and operational service-level thresholds.
 
 ## Dependencies
 
-- Stories 2.1, 2.3, 2.7, 2.8, 2.10, 2.12, and 2.13 must expose the lifecycle and decision signals to be audited and monitored.
+- Stories 2.3, 2.7, 2.8, 2.12, and 2.13 must provide the lifecycle, decision, and transaction events to observe.
 
 ## References
 
-- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), BR-010, FR-011, Non-Functional Requirements, Security Requirements, AC-015
+- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), BR-010, Non-Functional Requirements, Security Requirements, FR-011, AC-015

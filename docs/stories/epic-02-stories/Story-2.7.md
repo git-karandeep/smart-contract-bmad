@@ -1,28 +1,29 @@
-# Story 2.7 — Ingest authenticated screening results
+# Story 2.7 — Implement authenticated screening-message ingestion
 
-As a screening provider,
-I want to submit authenticated and correlated screening results,
-so that the correct transfer workflow can record and evaluate each decision.
+**Story Points:** 5
+
+As a screening provider and the transfer platform,
+I want screening results authenticated, validated, correlated, and deduplicated,
+so that only the correct provider decision can advance its transfer.
 
 ## Acceptance Criteria
 
-- Provider messages are authenticated using the configured provider identity mechanism and rejected when authentication or integrity validation fails.
-- The ingestion boundary validates the message schema, provider, screening type, instruction ID, screening request ID, correlation ID, decision, and timestamp.
-- Unknown, mismatched, expired, or cross-instruction identifiers are rejected or quarantined and cannot satisfy another transfer's screening wait.
-- A valid result is durably recorded and correlated to the correct Camunda process using the unique instruction and screening identifiers.
-- Duplicate delivery of the same provider/request/message does not create a second logical decision or advance the workflow more than once.
-- Late results are associated with the original instruction and cannot automatically release a rejected, cancelled, terminal, or legally held transfer.
-- Responses to providers do not disclose whether unrelated instructions or screening requests exist.
-- Automated tests cover valid messages, invalid authentication, malformed payloads, mismatched correlation, duplicates, and late results.
+- The ingestion boundary authenticates the configured provider and rejects unauthenticated or invalid messages.
+- Each message is validated for schema, integrity, expected provider, screening type, instruction ID, screening request ID, and correlation identifier.
+- Unknown, expired, or mismatched request identifiers are rejected or quarantined and cannot authorize another instruction.
+- Duplicate messages are recognized by stable provider/request/message identity and produce no second decision or workflow side effect.
+- A valid result is durably recorded before workflow correlation and produces an auditable event associated with the instruction.
+- Late results cannot release a transfer already rejected, cancelled, terminal, or under a legally required hold.
+- Automated tests cover authentication, invalid correlation, duplicate, late, malformed, and valid messages.
 
 ## Open Decisions
 
-- Confirm whether provider callbacks, Kafka messages, or both are supported, and define provider-specific authentication, replay protection, message IDs, and retention/quarantine policy.
+- Confirm provider authentication mechanisms, message schemas, stable message identifiers, and quarantine handling for each live integration.
 
 ## Dependencies
 
-- Stories 2.4, 2.5, and 2.6 must define the screening request identifiers and provider contracts.
+- Stories 2.3–2.6 must define the workflow wait and screening-request identities this boundary validates.
 
 ## References
 
-- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), Phase 4, BR-006, FR-004, FR-005, AC-005, AC-007, AC-008
+- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), Phase 4, FR-004–FR-005, AC-005, AC-007–AC-008

@@ -19,6 +19,25 @@
 - [Story 1.9: Refactor sweep](epic-01-stories/Story-1.9.md)
 - [Story 1.10: Verify the complete security request path](epic-01-stories/Story-1.10.md)
 
+## Epic 2: Wallet-Based Token Movement
+
+- [Story 2.1: Create transfer instruction API and database model](epic-02-stories/Story-2.1.md) — 5 points
+- [Story 2.2: Validate wallet addresses and transfer eligibility](epic-02-stories/Story-2.2.md) — 3 points
+- [Story 2.3: Create Camunda token movement BPMN workflow](epic-02-stories/Story-2.3.md) — 5 points
+- [Story 2.4: Initiate KYC screening and correlate results](epic-02-stories/Story-2.4.md) — 3 points
+- [Story 2.5: Initiate AML screening and correlate results](epic-02-stories/Story-2.5.md) — 3 points
+- [Story 2.6: Initiate sanctions screening and correlate results](epic-02-stories/Story-2.6.md) — 3 points
+- [Story 2.7: Implement authenticated screening-message ingestion](epic-02-stories/Story-2.7.md) — 5 points
+- [Story 2.8: Aggregate compliance decisions and enforce timeouts](epic-02-stories/Story-2.8.md) — 5 points
+- [Story 2.9: Implement pre-execution compliance and transfer validation](epic-02-stories/Story-2.9.md) — 3 points
+- [Story 2.10: Implement Web3j blockchain adapter](epic-02-stories/Story-2.10.md) — 5 points
+- [Story 2.11: Implement and test Solidity transfer restrictions](epic-02-stories/Story-2.11.md) — 3 points
+- [Story 2.12: Track blockchain transaction status and finality](epic-02-stories/Story-2.12.md) — 5 points
+- [Story 2.13: Implement reconciliation and final transfer status](epic-02-stories/Story-2.13.md) — 5 points
+- [Story 2.14: Implement idempotency, retries, and recovery](epic-02-stories/Story-2.14.md) — 5 points
+- [Story 2.15: Implement audit trail, monitoring, and alerts](epic-02-stories/Story-2.15.md) — 5 points
+- [Story 2.16: Complete end-to-end transfer security testing](epic-02-stories/Story-2.16.md) — 5 points
+
 See the [epic index](../epics/README.md) and the
 [requirement-to-code traceability guide](../traceability.md) for the path from
 requirements and acceptance criteria to design, source, and tests.

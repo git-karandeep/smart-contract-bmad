@@ -1,26 +1,29 @@
-# Story 2.9 — Revalidate transfer immediately before execution
+# Story 2.9 — Implement pre-execution compliance and transfer validation
+
+**Story Points:** 3
 
 As the transfer workflow,
-I want authorization, compliance, and transfer conditions checked again at the execution boundary,
-so that stale approval or a newly recorded hold cannot authorize token movement.
+I want authorization, eligibility, compliance, and configuration checked again at the execution boundary,
+so that stale approval or a newly applied hold cannot authorize a transfer.
 
 ## Acceptance Criteria
 
-- Immediately before calling the blockchain adapter, the service verifies the instruction remains authorized, eligible, and in an executable state.
-- All mandatory compliance decisions exist, remain valid under configured policy, and refer to the exact source, destination, amount, token, and network being executed.
-- A material change to those transfer fields invalidates prior approval unless an explicitly approved policy says otherwise.
-- The service checks for cancellation, hold, sanctions restriction, token/network disablement, and applicable current limits and restrictions.
-- Any failed or indeterminate revalidation produces an explicit non-executable outcome and prevents blockchain submission.
-- Tests prove stale compliance, changed instructions, new holds, and disabled configuration all block execution; valid current state passes.
+- Immediately before submission, the workflow verifies that the instruction remains authorized and eligible and that required compliance decisions remain valid.
+- A cancellation, hold, rejection, or terminal outcome prevents submission.
+- The network, token contract, transfer limits, and applicable token restrictions are checked against current configured policy.
+- A material change to source, destination, amount, token, or network invalidates earlier approval unless an explicit policy permits that change.
+- The gate records a structured pass/failure with a stable reason and instruction correlation; failure leaves the instruction non-executable.
+- A failed gate starts no blockchain transaction and records no screening approval on its behalf.
+- Automated tests cover stale/missing approval, changed instruction data, revoked authorization, active hold, and valid execution eligibility.
 
 ## Open Decisions
 
-- Confirm the compliance-result expiry/re-screening policy and how concurrent instruction updates, holds, and the final execution gate are serialized.
+- Confirm whether screening results expire and the approved policy for any material instruction change.
 
 ## Dependencies
 
-- Story 2.8 must produce the compliance decision; Story 2.2 must provide transfer-validation policy.
+- Story 2.2 must provide transfer eligibility validation; Story 2.8 must provide the aggregated compliance outcome.
 
 ## References
 
-- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), Phase 6, BR-007, FR-002, FR-008
+- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), Phase 6, BR-002, BR-007, FR-002, FR-008

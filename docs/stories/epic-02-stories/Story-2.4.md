@@ -1,26 +1,29 @@
-# Story 2.4 — Request KYC screening for transfer parties
+# Story 2.4 — Initiate KYC screening and correlate results
+
+**Story Points:** 3
 
 As the transfer workflow,
-I want a correlated KYC request sent for the relevant transfer parties,
-so that execution depends on their applicable KYC eligibility.
+I want to request KYC screening for the parties required by policy,
+so that transfers proceed only when their applicable KYC eligibility is approved.
 
 ## Acceptance Criteria
 
-- The KYC adapter sends the provider's agreed request contract with the instruction ID, unique KYC request ID, correlation ID, relevant party references, screening version, and request timestamp.
-- The request contains only information the KYC provider is authorized to receive; raw identity data is not copied into workflow variables or routine logs.
-- The adapter accepts and validates the provider's supported outcomes: `APPROVED`, `REJECTED`, `REVIEW_REQUIRED`, or `ERROR`.
-- The request and response are associated with the original instruction and KYC request; a response for another screening type or request cannot satisfy KYC.
-- Provider unavailability and malformed responses are represented as explicit operational outcomes, not as approval.
-- Contract and adapter tests cover request formation, each supported result, and provider failure.
+- A KYC request is created for each party required by configured policy and is associated with the transfer instruction and a unique screening request ID.
+- The request carries only identity references and other fields that the provider is authorized and configured to receive.
+- The request records its screening type, correlation identifier, timestamp, and policy/provider version needed to interpret the response.
+- The workflow can wait for an asynchronous KYC result correlated to the correct instruction and screening request.
+- `APPROVED`, `REJECTED`, `REVIEW_REQUIRED`, and `ERROR` results remain distinct; review or error is never treated as approval.
+- Provider failure or an invalid response follows an explicit non-success path and cannot authorize blockchain execution.
+- Automated tests cover request creation, correlation data, minimized payloads, and each supported result category.
 
 ## Open Decisions
 
-- Confirm the KYC provider, authentication method, request/response schema, relevant-party selection policy, and screening-result validity period.
+- Confirm which transfer parties and jurisdictions require KYC, the provider contract, and the approved identity-reference fields. Do not infer legal policy or send unnecessary identity data.
 
 ## Dependencies
 
-- Story 2.3 must provide the workflow service-task and result-correlation boundary.
+- Story 2.3 must provide the durable screening workflow and result-wait boundary.
 
 ## References
 
-- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), BR-003, Phase 3 KYC Request, FR-003, FR-004
+- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), BR-003, Phase 3, FR-003–FR-004

@@ -1,26 +1,29 @@
-# Story 2.6 — Request sanctions screening for transfer parties
+# Story 2.6 — Initiate sanctions screening and correlate results
+
+**Story Points:** 3
 
 As the transfer workflow,
-I want sanctions screening performed for the relevant parties and transaction,
-so that a prohibited transfer is stopped and any required restriction is preserved.
+I want sanctions screening for parties and transactions required by policy,
+so that prohibited transfers are rejected, restricted, frozen, or reviewed as policy requires.
 
 ## Acceptance Criteria
 
-- The sanctions adapter sends the provider's agreed request contract with instruction and unique screening request IDs, correlation ID, required party/transaction references, screening version, and timestamp.
-- The request follows the approved data-minimization and provider-authorization policy.
-- `APPROVED`, `REJECTED`, `REVIEW_REQUIRED`, and `ERROR` results are validated and correlated to the correct instruction and sanctions request.
-- A sanctions result requiring a freeze, restriction, or other mandated action is surfaced as a distinct policy outcome; it is not reduced to generic approval or silently treated as a generic rejection.
-- Unavailable service, malformed responses, and errors remain explicit non-approval outcomes.
-- Tests cover decisions, request correlation, provider failure, and any configured restricted/frozen outcome.
+- A sanctions request uses a unique screening request ID and is correlated to the specific instruction and screening type.
+- Only the parties and transaction information approved for the configured sanctions provider are sent.
+- The request records the timestamp, correlation identifier, and policy/provider version required to interpret its result.
+- `APPROVED`, `REJECTED`, `REVIEW_REQUIRED`, and `ERROR` results remain distinct and cannot be substituted for one another.
+- A sanctions result that requires rejection, restriction, freeze, or review follows its configured outcome and prevents unauthorized execution.
+- A provider error, missing result, or invalid correlation never counts as approval.
+- Automated tests cover request correlation, minimized payload, response outcomes, and failure paths.
 
 ## Open Decisions
 
-- Confirm the sanctions provider, authentication and schema, applicable match thresholds, and the policy/action mapping for a possible match, including who may authorize release of a hold.
+- Confirm the applicable sanctions policy, provider contract, and authorized freeze/restriction actions. This story must not invent legal requirements or operational powers.
 
 ## Dependencies
 
-- Story 2.3 must provide the workflow service-task and result-correlation boundary.
+- Story 2.3 must provide the durable screening workflow and result-wait boundary.
 
 ## References
 
-- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), BR-005, Phase 3 Sanctions Request, FR-003, FR-004, AC-004
+- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), BR-005, Phases 3–5, FR-003–FR-004, AC-004

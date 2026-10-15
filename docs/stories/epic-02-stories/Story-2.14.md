@@ -1,4 +1,6 @@
-# Story 2.14 — Make transfer processing idempotent and recoverable
+# Story 2.14 — Implement idempotency, retries, and recovery
+
+**Story Points:** 5
 
 As the platform,
 I want duplicate requests, retries, and workflow restarts handled safely,

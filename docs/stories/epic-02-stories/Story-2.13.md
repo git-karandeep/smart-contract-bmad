@@ -1,27 +1,28 @@
-# Story 2.13 — Reconcile confirmed transactions and finalize transfer status
+# Story 2.13 — Implement reconciliation and final transfer status
 
-As a transfer initiator,
-I want the reported transfer outcome verified against authoritative blockchain data,
-so that the instruction is marked complete only when the expected token movement is confirmed.
+**Story Points:** 5
+
+As a transfer operations team,
+I want a confirmed chain transaction reconciled against its instruction,
+so that a transfer is marked complete only when authoritative chain data matches.
 
 ## Acceptance Criteria
 
-- Reconciliation runs only after the configured successful finality condition, and obtains authoritative transaction, receipt, and token-event data.
-- The reconciler verifies the expected chain, transaction hash, contract, source, destination, token, and exact amount against the instruction.
-- The instruction becomes `COMPLETED` and a completion event/notification is emitted only when every reconciliation check succeeds.
-- A reverted transaction is recorded as failed and is never marked complete.
-- Missing or mismatched receipt/event data places the instruction in an investigation or hold state, raises an operational signal, and does not report success.
-- Completion updates and notifications are correlated to the instruction and are safe against duplicate event delivery.
-- Tests cover a matching transfer, revert, missing event, wrong amount/address/contract, and recovery from a reconciliation mismatch.
+- Reconciliation reads authoritative transaction and receipt data after the configured finality condition is met.
+- It verifies the expected network, transaction, token contract, transfer event, source, destination, and exact amount against the persisted instruction.
+- Only a successful matching reconciliation moves the instruction to `COMPLETED` and emits the completion outcome once.
+- Revert, missing data, or any mismatch leaves the instruction explicitly non-complete, records a reason, and raises the configured investigation signal.
+- Reconciliation is repeatable without duplicate completion events or invalid lifecycle transitions.
+- Automated tests cover matching results, mismatch in each material field, missing/reverted receipts, and replay.
 
 ## Open Decisions
 
-- Confirm the authoritative data source and operational investigation/resolution procedure for discrepancies.
+- Confirm the authoritative chain observation source and operational alert destination for reconciliation mismatches.
 
 ## Dependencies
 
-- Story 2.12 must provide a transaction that has met the configured finality condition.
+- Stories 2.10 and 2.12 must provide the recorded transaction and finality result.
 
 ## References
 
-- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), Phase 9, FR-010, AC-001, AC-010, AC-014
+- Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), Phase 9, BR-008, BR-010, FR-010–FR-011, AC-014–AC-015

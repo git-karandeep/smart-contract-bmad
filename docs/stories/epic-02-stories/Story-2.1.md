@@ -1,4 +1,6 @@
-# Story 2.1 — Create transfer instruction API and persistence model
+# Story 2.1 — Create transfer instruction API and database model
+
+**Story Points:** 5
 
 As an authorized transfer initiator,
 I want to submit a uniquely identified token-transfer instruction,
@@ -14,10 +16,6 @@ so that the platform can durably track and orchestrate its lifecycle.
 - A status lookup by instruction ID returns the current persisted state without exposing sensitive identity or signing data.
 - API and persistence contracts support explicit lifecycle transitions and the idempotency behavior completed in Story 2.14.
 
-## Open Decisions
-
-- Confirm the public API route and request/response error format if not already specified by the platform API contract.
-
 ## Dependencies
 
 - None. This establishes the durable instruction used by the remaining stories.
@@ -25,3 +23,4 @@ so that the platform can durably track and orchestrate its lifecycle.
 ## References
 
 - Epic — [Wallet-Based Token Movement](../../epics/epic-02-wallet.md), BR-001, Phase 1, FR-001, FR-012, AC-009, AC-012, AC-013
+- Epic implementation plan — [Epic 2 plan](../../../_bmad-output/initiative-bmad-generated/plan-epic-02-wallet.md), API route and validation-error decisions

@@ -1,4 +1,6 @@
-# Story 2.3 — Orchestrate the token movement lifecycle in Camunda
+# Story 2.3 — Create Camunda token movement BPMN workflow
+
+**Story Points:** 5
 
 As a compliance operations team,
 I want a durable Camunda workflow for each validated transfer,
