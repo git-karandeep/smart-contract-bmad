@@ -9,4 +9,9 @@ public interface ScreeningRequestRepository extends MongoRepository<ScreeningReq
     Optional<ScreeningRequestRecord> findByInstructionIdAndScreeningType(String instructionId, String screeningType);
 
     java.util.List<ScreeningRequestRecord> findAllByInstructionId(String instructionId);
+
+    java.util.List<ScreeningRequestRecord> findAllByInstructionIdAndScreeningType(
+        String instructionId,
+        String screeningType
+    );
 }

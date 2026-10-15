@@ -8,7 +8,7 @@
     <bpmn:extensionElements><zeebe:subscription correlationKey="=instructionId"/></bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="kycResultMessage" name="KycScreeningResult">
-    <bpmn:extensionElements><zeebe:subscription correlationKey="=kycCorrelationKey"/></bpmn:extensionElements>
+    <bpmn:extensionElements><zeebe:subscription correlationKey="=kycScreeningRequestId"/></bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="amlResultMessage" name="AmlScreeningResult">
     <bpmn:extensionElements><zeebe:subscription correlationKey="=amlCorrelationKey"/></bpmn:extensionElements>
@@ -38,9 +38,21 @@
           </zeebe:ioMapping>
         </bpmn:extensionElements>
       </bpmn:serviceTask>
+      <bpmn:exclusiveGateway id="cancellationGateway" name="Cancellation accepted?"
+                            default="flowCancellationRejected"/>
       <bpmn:endEvent id="cancellationHandled" name="Cancellation handled"/>
+      <bpmn:endEvent id="cancellationTerminated" name="Cancel transfer process">
+        <bpmn:terminateEventDefinition/>
+      </bpmn:endEvent>
       <bpmn:sequenceFlow id="flowCancellationRequested" sourceRef="cancellationRequested" targetRef="cancelTransfer"/>
-      <bpmn:sequenceFlow id="flowCancellationHandled" sourceRef="cancelTransfer" targetRef="cancellationHandled"/>
+      <bpmn:sequenceFlow id="flowCancelResult" sourceRef="cancelTransfer" targetRef="cancellationGateway"/>
+      <bpmn:sequenceFlow id="flowCancellationAccepted" sourceRef="cancellationGateway"
+                         targetRef="cancellationTerminated">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"
+                                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=cancellationOutcome = "CANCELLED"</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="flowCancellationRejected" sourceRef="cancellationGateway"
+                         targetRef="cancellationHandled"/>
     </bpmn:subProcess>
     <bpmn:serviceTask id="validateTransfer" name="Validate transfer">
       <bpmn:extensionElements><zeebe:taskDefinition type="transfer-validate" retries="3"/></bpmn:extensionElements>
@@ -52,16 +64,39 @@
       <bpmn:extensionElements><zeebe:taskDefinition type="screening-request-kyc" retries="3"/></bpmn:extensionElements>
     </bpmn:serviceTask>
     <bpmn:exclusiveGateway id="kycRequestGateway" name="KYC request published?" default="flowKycPolicyHold"/>
-    <bpmn:eventBasedGateway id="kycWait" name="Await KYC result or timeout"/>
-    <bpmn:intermediateCatchEvent id="kycResult" name="KYC result">
-      <bpmn:messageEventDefinition messageRef="kycResultMessage"/>
-    </bpmn:intermediateCatchEvent>
-    <bpmn:intermediateCatchEvent id="kycTimeout" name="KYC timeout">
-      <bpmn:timerEventDefinition><bpmn:timeDuration>PT15M</bpmn:timeDuration></bpmn:timerEventDefinition>
-    </bpmn:intermediateCatchEvent>
-    <bpmn:serviceTask id="kycTimeoutPersist" name="Persist KYC timeout hold">
-      <bpmn:extensionElements><zeebe:taskDefinition type="screening-timeout-kyc" retries="3"/></bpmn:extensionElements>
-    </bpmn:serviceTask>
+    <bpmn:subProcess id="kycScreeningRequests" name="Await every required KYC subject">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics
+              inputCollection="=kycScreeningRequestIds"
+              inputElement="kycScreeningRequestId"/>
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="kycSubjectWaitStart" name="Wait for subject result"/>
+      <bpmn:eventBasedGateway id="kycSubjectWait" name="Await KYC result or timeout"/>
+      <bpmn:intermediateCatchEvent id="kycResult" name="KYC subject result">
+        <bpmn:messageEventDefinition messageRef="kycResultMessage"/>
+      </bpmn:intermediateCatchEvent>
+      <bpmn:intermediateCatchEvent id="kycTimeout" name="KYC subject timeout">
+        <bpmn:timerEventDefinition><bpmn:timeDuration>PT15M</bpmn:timeDuration></bpmn:timerEventDefinition>
+      </bpmn:intermediateCatchEvent>
+      <bpmn:serviceTask id="kycTimeoutPersist" name="Persist KYC subject timeout hold">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="screening-timeout-kyc" retries="3"/>
+          <zeebe:ioMapping>
+            <zeebe:input source="=instructionId" target="instructionId"/>
+            <zeebe:input source="=kycScreeningRequestId" target="screeningRequestId"/>
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="kycSubjectComplete" name="KYC subject completed"/>
+      <bpmn:sequenceFlow id="flowKycSubjectStart" sourceRef="kycSubjectWaitStart" targetRef="kycSubjectWait"/>
+      <bpmn:sequenceFlow id="flowKycSubjectResult" sourceRef="kycSubjectWait" targetRef="kycResult"/>
+      <bpmn:sequenceFlow id="flowKycSubjectTimeout" sourceRef="kycSubjectWait" targetRef="kycTimeout"/>
+      <bpmn:sequenceFlow id="flowKycSubjectResultComplete" sourceRef="kycResult" targetRef="kycSubjectComplete"/>
+      <bpmn:sequenceFlow id="flowKycSubjectPersistTimeout" sourceRef="kycTimeout" targetRef="kycTimeoutPersist"/>
+      <bpmn:sequenceFlow id="flowKycSubjectTimeoutComplete" sourceRef="kycTimeoutPersist" targetRef="kycSubjectComplete"/>
+    </bpmn:subProcess>
     <bpmn:serviceTask id="kycPolicyHold" name="Persist missing KYC policy hold">
       <bpmn:extensionElements><zeebe:taskDefinition type="screening-timeout-kyc" retries="3"/></bpmn:extensionElements>
     </bpmn:serviceTask>
@@ -143,17 +178,16 @@
     <bpmn:sequenceFlow id="flowAmlRequest" sourceRef="screeningFork" targetRef="requestAml"/>
     <bpmn:sequenceFlow id="flowSanctionsRequest" sourceRef="screeningFork" targetRef="requestSanctions"/>
     <bpmn:sequenceFlow id="flowKycRequestGateway" sourceRef="requestKyc" targetRef="kycRequestGateway"/>
-    <bpmn:sequenceFlow id="flowKycRequestPublished" sourceRef="kycRequestGateway" targetRef="kycWait">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=kycRequestReady = true</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="flowKycRequestPublished" sourceRef="kycRequestGateway" targetRef="kycScreeningRequests">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=kycRequestReady = true and kycNotRequired != true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowKycNotRequired" sourceRef="kycRequestGateway" targetRef="screeningJoin">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=kycNotRequired = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="flowKycPolicyHold" sourceRef="kycRequestGateway" targetRef="kycPolicyHold">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=kycRequestReady = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowKycResult" sourceRef="kycWait" targetRef="kycResult"/>
-    <bpmn:sequenceFlow id="flowKycTimeout" sourceRef="kycWait" targetRef="kycTimeout"/>
-    <bpmn:sequenceFlow id="flowKycResultJoin" sourceRef="kycResult" targetRef="screeningJoin"/>
-    <bpmn:sequenceFlow id="flowKycTimeoutPersist" sourceRef="kycTimeout" targetRef="kycTimeoutPersist"/>
-    <bpmn:sequenceFlow id="flowKycTimeoutJoin" sourceRef="kycTimeoutPersist" targetRef="screeningJoin"/>
+    <bpmn:sequenceFlow id="flowKycRequestsJoin" sourceRef="kycScreeningRequests" targetRef="screeningJoin"/>
     <bpmn:sequenceFlow id="flowKycPolicyHoldJoin" sourceRef="kycPolicyHold" targetRef="screeningJoin"/>
     <bpmn:sequenceFlow id="flowAmlRequestGateway" sourceRef="requestAml" targetRef="amlRequestGateway"/>
     <bpmn:sequenceFlow id="flowAmlRequestPublished" sourceRef="amlRequestGateway" targetRef="amlWait">

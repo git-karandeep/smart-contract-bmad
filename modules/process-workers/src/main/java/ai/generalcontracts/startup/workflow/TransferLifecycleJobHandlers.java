@@ -10,10 +10,15 @@ import ai.generalcontracts.startup.transfer.TransferInstruction;
 import ai.generalcontracts.startup.transfer.TransferInstructionRepository;
 import ai.generalcontracts.startup.transfer.TransferLifecycleService;
 import ai.generalcontracts.startup.transfer.TransferStatus;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -98,12 +103,36 @@ public class TransferLifecycleJobHandlers {
                 ? "TRANSFER_NOT_SCREENING"
                 : instruction.getReasonCode());
         }
-        ScreeningRequestService.RequestOutcome outcome = screeningRequests.createAndPublish(instruction, type);
-        return screeningRequestOutput(type, outcome.ready(), outcome.requestId(), outcome.reasonCode());
+        ScreeningRequestService.RequestOutcome outcome = type == ScreeningType.KYC
+            ? screeningRequests.createKycRequests(instruction)
+            : screeningRequests.createAndPublish(instruction, type);
+        Map<String, Object> output = screeningRequestOutput(
+            type, outcome.ready(), outcome.requestId(), outcome.reasonCode()
+        );
+        if (type == ScreeningType.KYC && outcome.ready()) {
+            output.put("kycNotRequired", outcome.notRequired());
+            if (!outcome.notRequired()) {
+                output.put("kycScreeningRequestIds", outcome.requestIds());
+            }
+        }
+        return output;
     }
 
     public Map<String, Object> recordScreeningTimeout(String instructionId, ScreeningType type) {
         ScreeningRequestRecord request = screeningRequests.recordTimeout(instructionId, type);
+        return screeningTimeoutOutput(type, request);
+    }
+
+    public Map<String, Object> recordScreeningTimeout(
+        String instructionId,
+        ScreeningType type,
+        String requestId
+    ) {
+        ScreeningRequestRecord request = screeningRequests.recordTimeout(instructionId, type, requestId);
+        return screeningTimeoutOutput(type, request);
+    }
+
+    private Map<String, Object> screeningTimeoutOutput(ScreeningType type, ScreeningRequestRecord request) {
         Map<String, Object> output = new LinkedHashMap<>();
         output.put(timeoutVariable(type), true);
         output.put("screeningHoldPersisted", true);
@@ -113,23 +142,59 @@ public class TransferLifecycleJobHandlers {
 
     public Map<String, Object> aggregateCompliance(String instructionId) {
         TransferInstruction instruction = instruction(instructionId);
-        EnumMap<ScreeningType, ScreeningDecision> decisions = new EnumMap<>(ScreeningType.class);
+        EnumMap<ScreeningType, List<ScreeningDecision>> decisions = new EnumMap<>(ScreeningType.class);
+        Set<ScreeningType> requiredTypes = EnumSet.allOf(ScreeningType.class);
         boolean holdPersisted = instruction.getStatus() == TransferStatus.COMPLIANCE_HOLD;
         for (ScreeningType type : ScreeningType.values()) {
-            Optional<ScreeningResultRecord> result = results.findByInstructionIdAndScreeningType(
-                instructionId, type.name()
-            );
-            result.ifPresent(record -> decisions.put(type, decision(record)));
-            Optional<ScreeningRequestRecord> request = requests.findByInstructionIdAndScreeningType(
-                instructionId, type.name()
-            );
-            if (request.isEmpty()
-                || !ScreeningRequestStatus.PUBLISHED.name().equals(request.get().getPublicationStatus())) {
+            List<ScreeningRequestRecord> typeRequests = requestRecords(instructionId, type);
+            if (type == ScreeningType.KYC && typeRequests.size() == 1
+                && ScreeningRequestStatus.NOT_REQUIRED.name().equals(typeRequests.get(0).getPublicationStatus())) {
+                requiredTypes.remove(ScreeningType.KYC);
+                continue;
+            }
+            if (typeRequests.isEmpty()) {
                 holdPersisted = true;
+                continue;
+            }
+            List<ScreeningResultRecord> typeResults = resultRecords(instructionId, type);
+            Map<String, ScreeningResultRecord> resultByRequestId = new HashMap<>();
+            for (ScreeningResultRecord result : typeResults) {
+                if (resultByRequestId.put(result.getRequestId(), result) != null) {
+                    holdPersisted = true;
+                }
+            }
+            if (type == ScreeningType.KYC) {
+                Integer expectedCount = typeRequests.get(0).getRequiredSubjectCount();
+                if (expectedCount == null || expectedCount != typeRequests.size()
+                    || typeRequests.stream().anyMatch(request ->
+                        !expectedCount.equals(request.getRequiredSubjectCount())
+                            || request.getSubjectReference() == null)) {
+                    holdPersisted = true;
+                }
+            } else if (typeRequests.size() != 1) {
+                holdPersisted = true;
+            }
+            List<ScreeningDecision> typeDecisions = new ArrayList<>();
+            for (ScreeningRequestRecord request : typeRequests) {
+                if (!ScreeningRequestStatus.PUBLISHED.name().equals(request.getPublicationStatus())) {
+                    holdPersisted = true;
+                }
+                ScreeningResultRecord result = resultByRequestId.get(request.getRequestId());
+                if (result != null) {
+                    typeDecisions.add(decision(result));
+                } else {
+                    holdPersisted = true;
+                }
+            }
+            if (typeResults.size() != typeRequests.size()) {
+                holdPersisted = true;
+            }
+            if (!typeDecisions.isEmpty()) {
+                decisions.put(type, typeDecisions);
             }
         }
 
-        ComplianceOutcome outcome = decisionAggregator.evaluate(decisions, holdPersisted);
+        ComplianceOutcome outcome = decisionAggregator.evaluate(decisions, requiredTypes, holdPersisted);
         persistComplianceOutcome(instruction, outcome);
         Map<String, Object> output = output("complianceOutcome", outcome.name());
         output.put("complianceApproved", outcome == ComplianceOutcome.APPROVED);
@@ -369,21 +434,63 @@ public class TransferLifecycleJobHandlers {
     }
 
     private boolean allMandatoryApproved(String instructionId) {
+        Set<ScreeningType> requiredTypes = EnumSet.allOf(ScreeningType.class);
         for (ScreeningType type : ScreeningType.values()) {
-            Optional<ScreeningResultRecord> result = results.findByInstructionIdAndScreeningType(
-                instructionId, type.name()
-            );
-            Optional<ScreeningRequestRecord> request = requests.findByInstructionIdAndScreeningType(
-                instructionId, type.name()
-            );
-            if (result.isEmpty()
-                || decision(result.get()) != ScreeningDecision.APPROVED
-                || request.isEmpty()
-                || !ScreeningRequestStatus.PUBLISHED.name().equals(request.get().getPublicationStatus())) {
+            List<ScreeningRequestRecord> typeRequests = requestRecords(instructionId, type);
+            if (type == ScreeningType.KYC && typeRequests.size() == 1
+                && ScreeningRequestStatus.NOT_REQUIRED.name().equals(typeRequests.get(0).getPublicationStatus())) {
+                requiredTypes.remove(ScreeningType.KYC);
+                continue;
+            }
+            if (typeRequests.isEmpty()) {
                 return false;
             }
+            List<ScreeningResultRecord> typeResults = resultRecords(instructionId, type);
+            if (type == ScreeningType.KYC) {
+                Integer expectedCount = typeRequests.get(0).getRequiredSubjectCount();
+                if (expectedCount == null || expectedCount != typeRequests.size()
+                    || typeRequests.stream().anyMatch(request ->
+                        !expectedCount.equals(request.getRequiredSubjectCount())
+                            || request.getSubjectReference() == null)) {
+                    return false;
+                }
+            } else if (typeRequests.size() != 1) {
+                return false;
+            }
+            Map<String, ScreeningResultRecord> resultByRequestId = new HashMap<>();
+            for (ScreeningResultRecord result : typeResults) {
+                resultByRequestId.put(result.getRequestId(), result);
+            }
+            if (typeResults.size() != typeRequests.size()) {
+                return false;
+            }
+            for (ScreeningRequestRecord request : typeRequests) {
+                ScreeningResultRecord result = resultByRequestId.get(request.getRequestId());
+                if (result == null || decision(result) != ScreeningDecision.APPROVED
+                    || !ScreeningRequestStatus.PUBLISHED.name().equals(request.getPublicationStatus())) {
+                    return false;
+                }
+            }
         }
-        return true;
+        return !requiredTypes.isEmpty();
+    }
+
+    private List<ScreeningRequestRecord> requestRecords(String instructionId, ScreeningType type) {
+        if (type == ScreeningType.KYC) {
+            return requests.findAllByInstructionIdAndScreeningType(instructionId, type.name());
+        }
+        return requests.findByInstructionIdAndScreeningType(instructionId, type.name())
+            .map(List::of)
+            .orElseGet(List::of);
+    }
+
+    private List<ScreeningResultRecord> resultRecords(String instructionId, ScreeningType type) {
+        if (type == ScreeningType.KYC) {
+            return results.findAllByInstructionIdAndScreeningType(instructionId, type.name());
+        }
+        return results.findByInstructionIdAndScreeningType(instructionId, type.name())
+            .map(List::of)
+            .orElseGet(List::of);
     }
 
     private boolean safePolicyCheck(TransferInstruction instruction) {

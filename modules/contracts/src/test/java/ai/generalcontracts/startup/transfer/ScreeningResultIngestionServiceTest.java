@@ -65,6 +65,34 @@ class ScreeningResultIngestionServiceTest {
     }
 
     @Test
+    void persistsAndCorrelatesMultipleKycResultsByTheirOwnRequestIds() {
+        ScreeningRequestRecord firstRequest = new ScreeningRequestRecord(
+            "request-kyc-a", "corr-kyc-a", "transfer-1", "provider-1", "KYC", "provider-v2",
+            Instant.parse("2026-10-11T20:00:00Z"), "subject-a", java.util.Map.of("caseRef", "opaque-a"),
+            "policy-v4", 2
+        );
+        ScreeningRequestRecord secondRequest = new ScreeningRequestRecord(
+            "request-kyc-b", "corr-kyc-b", "transfer-1", "provider-1", "KYC", "provider-v2",
+            Instant.parse("2026-10-11T20:00:00Z"), "subject-b", java.util.Map.of("caseRef", "opaque-b"),
+            "policy-v4", 2
+        );
+        ScreeningResult first = kycResult("message-a", "request-kyc-a", "corr-kyc-a");
+        ScreeningResult second = kycResult("message-b", "request-kyc-b", "corr-kyc-b");
+        when(authenticator.isAuthenticated(any(), org.mockito.ArgumentMatchers.eq("valid"))).thenReturn(true);
+        when(requests.findByRequestId("request-kyc-a")).thenReturn(Optional.of(firstRequest));
+        when(requests.findByRequestId("request-kyc-b")).thenReturn(Optional.of(secondRequest));
+        when(results.findByProviderIdAndMessageId("provider-1", "message-a")).thenReturn(Optional.empty());
+        when(results.findByProviderIdAndMessageId("provider-1", "message-b")).thenReturn(Optional.empty());
+        when(results.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertEquals(ScreeningResultIngestionService.IngestionOutcome.APPLIED, service.ingest(first, "valid"));
+        assertEquals(ScreeningResultIngestionService.IngestionOutcome.APPLIED, service.ingest(second, "valid"));
+
+        verify(correlator).correlate(first);
+        verify(correlator).correlate(second);
+    }
+
+    @Test
     void rejectsUnauthenticatedAndMismatchedResultsBeforePersistence() {
         when(authenticator.isAuthenticated(result(), "invalid")).thenReturn(false);
         assertThrows(ResponseStatusException.class, () -> service.ingest(result(), "invalid"));
@@ -180,6 +208,19 @@ class ScreeningResultIngestionServiceTest {
         return new ScreeningResult(
             "provider-1", "message-1", "transfer-1", "request-1", "transfer-1:KYC",
             ScreeningType.KYC, ScreeningDecision.APPROVED, Instant.parse("2026-10-11T20:30:00Z")
+        );
+    }
+
+    private ScreeningResult kycResult(String messageId, String requestId, String correlationId) {
+        return new ScreeningResult(
+            "provider-1",
+            messageId,
+            "transfer-1",
+            requestId,
+            correlationId,
+            ScreeningType.KYC,
+            ScreeningDecision.APPROVED,
+            Instant.parse("2026-10-11T20:30:00Z")
         );
     }
 }

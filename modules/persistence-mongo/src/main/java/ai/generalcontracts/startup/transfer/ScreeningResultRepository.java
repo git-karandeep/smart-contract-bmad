@@ -7,4 +7,9 @@ public interface ScreeningResultRepository extends MongoRepository<ScreeningResu
     Optional<ScreeningResultRecord> findByProviderIdAndMessageId(String providerId, String messageId);
 
     Optional<ScreeningResultRecord> findByInstructionIdAndScreeningType(String instructionId, String screeningType);
+
+    java.util.List<ScreeningResultRecord> findAllByInstructionIdAndScreeningType(
+        String instructionId,
+        String screeningType
+    );
 }

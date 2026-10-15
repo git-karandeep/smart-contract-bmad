@@ -46,9 +46,12 @@ public class MongoInfrastructureInitializer implements ApplicationRunner {
                 new Index().on("instructionId", Sort.Direction.ASC)
                     .on("occurredAt", Sort.Direction.ASC).named("transfer_audit_timeline")
             );
+            dropLegacyScreeningRequestIndex();
             mongoTemplate.indexOps("screening_requests").createIndex(
                 new Index().on("instructionId", Sort.Direction.ASC)
-                    .on("screeningType", Sort.Direction.ASC).unique().named("screening_instruction_type_unique")
+                    .on("screeningType", Sort.Direction.ASC)
+                    .on("subjectReference", Sort.Direction.ASC)
+                    .unique().named("screening_instruction_type_subject_unique")
             );
             mongoTemplate.indexOps("screening_requests").createIndex(
                 new Index().on("correlationId", Sort.Direction.ASC).unique().named("correlation_id_unique")
@@ -117,6 +120,16 @@ public class MongoInfrastructureInitializer implements ApplicationRunner {
             if (!mongoTemplate.collectionExists(collection)) {
                 throw exception;
             }
+        }
+    }
+
+    private void dropLegacyScreeningRequestIndex() {
+        var indexOperations = mongoTemplate.indexOps("screening_requests");
+        var indexes = indexOperations.getIndexInfo();
+        if (indexes != null && indexes.stream().anyMatch(
+            index -> "screening_instruction_type_unique".equals(index.getName())
+        )) {
+            indexOperations.dropIndex("screening_instruction_type_unique");
         }
     }
 

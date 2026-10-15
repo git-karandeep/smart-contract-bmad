@@ -5,5 +5,7 @@ public enum ScreeningRequestStatus {
     PUBLISHED,
     PUBLICATION_FAILED,
     POLICY_UNAVAILABLE,
+    INVALID_SUBJECT_DATA,
+    NOT_REQUIRED,
     TIMED_OUT
 }

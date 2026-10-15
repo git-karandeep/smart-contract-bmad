@@ -24,7 +24,6 @@ import ai.generalcontracts.startup.transfer.TransferInstructionRepository;
 import ai.generalcontracts.startup.transfer.TransferLifecycleService;
 import ai.generalcontracts.startup.transfer.TransferStatus;
 import java.time.Instant;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -190,8 +189,8 @@ class TransferLifecycleJobHandlersTest {
             when(fixture.requests.findByInstructionIdAndScreeningType("transfer-1", type.name()))
                 .thenReturn(Optional.of(request(type, ScreeningRequestStatus.PUBLISHED)));
         }
-        when(fixture.requests.findByInstructionIdAndScreeningType("transfer-1", "KYC"))
-            .thenReturn(Optional.of(kycRequest));
+        when(fixture.requests.findAllByInstructionIdAndScreeningType("transfer-1", "KYC"))
+            .thenReturn(List.of(kycRequest));
         ScreeningRequestService requestService = new ScreeningRequestService(
             fixture.requests,
             (instruction, type) -> Optional.empty(),
@@ -229,10 +228,19 @@ class TransferLifecycleJobHandlersTest {
                     ScreeningDecision decision = type == affectedType
                         ? nonApproval
                         : ScreeningDecision.APPROVED;
-                    when(fixture.results.findByInstructionIdAndScreeningType("transfer-1", type.name()))
-                        .thenReturn(Optional.of(result(type, decision)));
-                    when(fixture.requests.findByInstructionIdAndScreeningType("transfer-1", type.name()))
-                        .thenReturn(Optional.of(request(type, ScreeningRequestStatus.PUBLISHED)));
+                    if (type == ScreeningType.KYC) {
+                        when(fixture.results.findAllByInstructionIdAndScreeningType("transfer-1", type.name()))
+                            .thenReturn(List.of(requestResult(
+                                "transfer-1:KYC", type, decision
+                            )));
+                        when(fixture.requests.findAllByInstructionIdAndScreeningType("transfer-1", type.name()))
+                            .thenReturn(List.of(request(type, ScreeningRequestStatus.PUBLISHED)));
+                    } else {
+                        when(fixture.results.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                            .thenReturn(Optional.of(result(type, decision)));
+                        when(fixture.requests.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                            .thenReturn(Optional.of(request(type, ScreeningRequestStatus.PUBLISHED)));
+                    }
                 }
 
                 TransferLifecycleJobHandlers handlers = fixture.handlers();
@@ -250,13 +258,127 @@ class TransferLifecycleJobHandlersTest {
     }
 
     @Test
+    void correlatesAndRequiresApprovalFromEveryKycSubjectBeforeExecution() {
+        Fixture fixture = new Fixture(TransferStatus.SCREENING_PENDING);
+        ScreeningRequestRecord firstRequest = kycRequest("kyc-request-a", "subject-a", 2);
+        ScreeningRequestRecord secondRequest = kycRequest("kyc-request-b", "subject-b", 2);
+        ScreeningResultRecord firstResult = requestResult(
+            "kyc-request-a", ScreeningType.KYC, ScreeningDecision.APPROVED
+        );
+        ScreeningResultRecord secondResult = requestResult(
+            "kyc-request-b", ScreeningType.KYC, ScreeningDecision.APPROVED
+        );
+        when(fixture.requests.findAllByInstructionIdAndScreeningType("transfer-1", "KYC"))
+            .thenReturn(List.of(firstRequest, secondRequest));
+        when(fixture.results.findAllByInstructionIdAndScreeningType("transfer-1", "KYC"))
+            .thenReturn(List.of(secondResult, firstResult));
+        for (ScreeningType type : new ScreeningType[] { ScreeningType.AML, ScreeningType.SANCTIONS }) {
+            when(fixture.requests.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                .thenReturn(Optional.of(request(type, ScreeningRequestStatus.PUBLISHED)));
+            when(fixture.results.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                .thenReturn(Optional.of(result(type, ScreeningDecision.APPROVED)));
+        }
+
+        TransferLifecycleJobHandlers handlers = fixture.handlers();
+        Map<String, Object> aggregate = handlers.aggregateCompliance("transfer-1");
+        Map<String, Object> gate = handlers.preExecutionGate(
+            "transfer-1", (String) aggregate.get("complianceOutcome")
+        );
+
+        assertEquals("APPROVED", aggregate.get("complianceOutcome"));
+        assertEquals(true, gate.get("executionAllowed"));
+        verify(fixture.lifecycle).transition(
+            "transfer-1",
+            TransferStatus.COMPLIANCE_APPROVED,
+            TransferStatus.READY_FOR_EXECUTION,
+            null,
+            null
+        );
+    }
+
+    @Test
+    void rejectsAnyNonApprovalFromAnyRequiredKycSubject() {
+        Map<ScreeningDecision, String> outcomes = Map.of(
+            ScreeningDecision.REJECTED, "REJECTED",
+            ScreeningDecision.REVIEW_REQUIRED, "MANUAL_REVIEW",
+            ScreeningDecision.ERROR, "HOLD"
+        );
+        outcomes.forEach((decision, expectedOutcome) -> {
+            Fixture fixture = new Fixture(TransferStatus.SCREENING_PENDING);
+            when(fixture.requests.findAllByInstructionIdAndScreeningType("transfer-1", "KYC"))
+                .thenReturn(List.of(
+                    kycRequest("kyc-request-a", "subject-a", 2),
+                    kycRequest("kyc-request-b", "subject-b", 2)
+                ));
+            when(fixture.results.findAllByInstructionIdAndScreeningType("transfer-1", "KYC"))
+                .thenReturn(List.of(
+                    requestResult("kyc-request-a", ScreeningType.KYC, ScreeningDecision.APPROVED),
+                    requestResult("kyc-request-b", ScreeningType.KYC, decision)
+                ));
+            for (ScreeningType type : new ScreeningType[] { ScreeningType.AML, ScreeningType.SANCTIONS }) {
+                when(fixture.requests.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                    .thenReturn(Optional.of(request(type, ScreeningRequestStatus.PUBLISHED)));
+                when(fixture.results.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                    .thenReturn(Optional.of(result(type, ScreeningDecision.APPROVED)));
+            }
+
+            Map<String, Object> aggregate = fixture.handlers().aggregateCompliance("transfer-1");
+
+            assertEquals(expectedOutcome, aggregate.get("complianceOutcome"));
+            assertFalse(Boolean.TRUE.equals(aggregate.get("complianceApproved")));
+        });
+    }
+
+    @Test
+    void explicitPersistedKycNotRequiredDoesNotMeanPolicyUnavailable() {
+        Fixture fixture = new Fixture(TransferStatus.SCREENING_PENDING);
+        ScreeningRequestRecord kycNotRequired = new ScreeningRequestRecord(
+            "transfer-1:KYC",
+            "transfer-1:KYC",
+            "transfer-1",
+            null,
+            "KYC",
+            null,
+            Instant.parse("2026-10-11T00:00:00Z"),
+            ScreeningRequestStatus.NOT_REQUIRED,
+            null
+        );
+        when(fixture.requests.findAllByInstructionIdAndScreeningType("transfer-1", "KYC"))
+            .thenReturn(List.of(kycNotRequired));
+        for (ScreeningType type : new ScreeningType[] { ScreeningType.AML, ScreeningType.SANCTIONS }) {
+            when(fixture.requests.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                .thenReturn(Optional.of(request(type, ScreeningRequestStatus.PUBLISHED)));
+            when(fixture.results.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                .thenReturn(Optional.of(result(type, ScreeningDecision.APPROVED)));
+        }
+
+        TransferLifecycleJobHandlers handlers = fixture.handlers();
+        Map<String, Object> aggregate = handlers.aggregateCompliance("transfer-1");
+        Map<String, Object> gate = handlers.preExecutionGate(
+            "transfer-1", (String) aggregate.get("complianceOutcome")
+        );
+
+        assertEquals("APPROVED", aggregate.get("complianceOutcome"));
+        assertEquals(true, gate.get("executionAllowed"));
+    }
+
+    @Test
     void allThreeApprovalsStillRequireConfiguredPreExecutionPolicy() {
         Fixture fixture = new Fixture(TransferStatus.COMPLIANCE_APPROVED);
         for (ScreeningType type : ScreeningType.values()) {
-            when(fixture.results.findByInstructionIdAndScreeningType("transfer-1", type.name()))
-                .thenReturn(Optional.of(result(type, ScreeningDecision.APPROVED)));
-            when(fixture.requests.findByInstructionIdAndScreeningType("transfer-1", type.name()))
-                .thenReturn(Optional.of(request(type, ScreeningRequestStatus.PUBLISHED)));
+            if (type == ScreeningType.KYC) {
+                when(fixture.results.findAllByInstructionIdAndScreeningType("transfer-1", type.name()))
+                    .thenReturn(List.of(requestResult(
+                        "transfer-1:KYC", type, ScreeningDecision.APPROVED
+                    )));
+                when(fixture.requests.findAllByInstructionIdAndScreeningType("transfer-1", type.name()))
+                    .thenReturn(List.of(request(type, ScreeningRequestStatus.PUBLISHED)));
+            } else {
+                when(fixture.results.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                    .thenReturn(Optional.of(result(type, ScreeningDecision.APPROVED)));
+                when(fixture.requests.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                    .thenReturn(Optional.of(request(type, ScreeningRequestStatus.PUBLISHED)));
+            }
         }
         fixture.preExecutionPolicy = instruction -> false;
 
@@ -446,6 +568,43 @@ class TransferLifecycleJobHandlersTest {
             "transfer-1",
             "transfer-1:" + type.name(),
             "transfer-1:" + type.name(),
+            type.name(),
+            decision.name(),
+            Instant.parse("2026-10-11T00:00:00Z"),
+            Instant.parse("2026-10-11T00:00:01Z")
+        );
+    }
+
+    private ScreeningRequestRecord kycRequest(String requestId, String subjectReference, int requiredCount) {
+        ScreeningRequestRecord request = new ScreeningRequestRecord(
+            requestId,
+            requestId + ":correlation",
+            "transfer-1",
+            "configured-provider",
+            ScreeningType.KYC.name(),
+            "provider-v2",
+            Instant.parse("2026-10-11T00:00:00Z"),
+            subjectReference,
+            Map.of("caseRef", "opaque-" + subjectReference),
+            "policy-v4",
+            requiredCount
+        );
+        request.markPublished(Instant.parse("2026-10-11T00:00:01Z"));
+        return request;
+    }
+
+    private ScreeningResultRecord requestResult(
+        String requestId,
+        ScreeningType type,
+        ScreeningDecision decision
+    ) {
+        return new ScreeningResultRecord(
+            requestId + "-result",
+            "configured-provider",
+            requestId + "-message",
+            "transfer-1",
+            requestId,
+            requestId + ":correlation",
             type.name(),
             decision.name(),
             Instant.parse("2026-10-11T00:00:00Z"),

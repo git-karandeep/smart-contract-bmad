@@ -3,6 +3,8 @@ package ai.generalcontracts.startup.workflow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -54,5 +56,57 @@ class ScreeningDecisionAggregatorTest {
             ScreeningType.AML, ScreeningDecision.APPROVED,
             ScreeningType.SANCTIONS, ScreeningDecision.RESTRICTED
         ), false));
+    }
+
+    @Test
+    void requiresEveryPolicyRequiredKycSubjectApprovalAndPreservesItsDecision() {
+        EnumMap<ScreeningType, List<ScreeningDecision>> decisions =
+            new EnumMap<>(ScreeningType.class);
+        decisions.put(ScreeningType.KYC, List.of(
+            ScreeningDecision.APPROVED, ScreeningDecision.APPROVED
+        ));
+        decisions.put(ScreeningType.AML, List.of(ScreeningDecision.APPROVED));
+        decisions.put(ScreeningType.SANCTIONS, List.of(ScreeningDecision.APPROVED));
+        assertEquals(
+            ComplianceOutcome.APPROVED,
+            aggregator.evaluate(decisions, EnumSet.allOf(ScreeningType.class), false)
+        );
+        assertEquals(
+            ComplianceOutcome.WAITING,
+            aggregator.evaluate(Map.of(
+                ScreeningType.AML, List.of(ScreeningDecision.APPROVED),
+                ScreeningType.SANCTIONS, List.of(ScreeningDecision.APPROVED)
+            ), EnumSet.allOf(ScreeningType.class), false)
+        );
+
+        Map<ScreeningDecision, ComplianceOutcome> nonApprovals = Map.of(
+            ScreeningDecision.REJECTED, ComplianceOutcome.REJECTED,
+            ScreeningDecision.REVIEW_REQUIRED, ComplianceOutcome.MANUAL_REVIEW,
+            ScreeningDecision.ERROR, ComplianceOutcome.HOLD
+        );
+        nonApprovals.forEach((decision, expected) -> {
+            decisions.put(ScreeningType.KYC, List.of(ScreeningDecision.APPROVED, decision));
+            assertEquals(expected, aggregator.evaluate(
+                decisions, EnumSet.allOf(ScreeningType.class), false
+            ));
+        });
+    }
+
+    @Test
+    void permitsExplicitPolicyToOmitKycButStillRequiresOtherMandatoryApprovals() {
+        assertEquals(
+            ComplianceOutcome.APPROVED,
+            aggregator.evaluate(Map.of(
+                ScreeningType.AML, List.of(ScreeningDecision.APPROVED),
+                ScreeningType.SANCTIONS, List.of(ScreeningDecision.APPROVED)
+            ), EnumSet.of(ScreeningType.AML, ScreeningType.SANCTIONS), false)
+        );
+        assertEquals(
+            ComplianceOutcome.HOLD,
+            aggregator.evaluate(Map.of(
+                ScreeningType.AML, List.of(ScreeningDecision.APPROVED),
+                ScreeningType.SANCTIONS, List.of(ScreeningDecision.ERROR)
+            ), EnumSet.of(ScreeningType.AML, ScreeningType.SANCTIONS), false)
+        );
     }
 }

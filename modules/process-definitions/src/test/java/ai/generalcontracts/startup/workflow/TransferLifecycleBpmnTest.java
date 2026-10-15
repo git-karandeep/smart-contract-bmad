@@ -66,7 +66,25 @@ class TransferLifecycleBpmnTest {
         ));
         assertTrue((Boolean) xpath.evaluate(
             "boolean(//bpmn:message[@name='KycScreeningResult']/bpmn:extensionElements/"
-                + "zeebe:subscription[@correlationKey='=kycCorrelationKey'])",
+                + "zeebe:subscription[@correlationKey='=kycScreeningRequestId'])",
+            document, XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:subProcess[@id='kycScreeningRequests']"
+                + "/bpmn:multiInstanceLoopCharacteristics/bpmn:extensionElements/"
+                + "zeebe:loopCharacteristics[@inputCollection='=kycScreeningRequestIds' "
+                + "and @inputElement='kycScreeningRequestId'])",
+            document, XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:sequenceFlow[@id='flowKycNotRequired' and @targetRef='screeningJoin' "
+                + "and contains(bpmn:conditionExpression, 'kycNotRequired')])",
+            document, XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:serviceTask[@id='kycTimeoutPersist']"
+                + "/bpmn:extensionElements/zeebe:ioMapping/"
+                + "zeebe:input[@target='screeningRequestId' and @source='=kycScreeningRequestId'])",
             document, XPathConstants.BOOLEAN
         ));
         assertTrue((Boolean) xpath.evaluate(
@@ -88,6 +106,29 @@ class TransferLifecycleBpmnTest {
         assertTrue((Boolean) xpath.evaluate(
             "boolean(//bpmn:serviceTask[@id='cancelTransfer']"
                 + "/bpmn:extensionElements/zeebe:taskDefinition[@type='transfer-cancel' and @retries='3'])",
+            document, XPathConstants.BOOLEAN
+        ));
+        assertEquals("=cancellationOutcome = \"CANCELLED\"", xpath.evaluate(
+            "string(//bpmn:sequenceFlow[@id='flowCancellationAccepted']/bpmn:conditionExpression)",
+            document, XPathConstants.STRING
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:sequenceFlow[@id='flowCancellationAccepted' "
+                + "and @targetRef='cancellationTerminated'])",
+            document, XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:endEvent[@id='cancellationTerminated']/bpmn:terminateEventDefinition)",
+            document, XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:exclusiveGateway[@id='cancellationGateway' and "
+                + "@default='flowCancellationRejected'])",
+            document, XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:sequenceFlow[@id='flowCancellationRejected' "
+                + "and @targetRef='cancellationHandled'])",
             document, XPathConstants.BOOLEAN
         ));
         assertEquals(0.0, (Double) xpath.evaluate(
@@ -114,11 +155,15 @@ class TransferLifecycleBpmnTest {
             "boolean(//zeebe:subscription[@correlationKey='=sanctionsCorrelationKey'])",
             document, XPathConstants.BOOLEAN
         ));
-        assertEquals(3.0, (Double) xpath.evaluate(
+        assertEquals(2.0, (Double) xpath.evaluate(
             "count(//bpmn:sequenceFlow[@targetRef='screeningJoin' and "
-                + "(@sourceRef='kycTimeoutPersist' or @sourceRef='amlTimeoutPersist' "
+                + "(@sourceRef='amlTimeoutPersist' "
                 + "or @sourceRef='sanctionsTimeoutPersist')])",
             document, XPathConstants.NUMBER
+        ));
+        assertNotNull(xpath.evaluate(
+            "//bpmn:sequenceFlow[@sourceRef='kycScreeningRequests' and @targetRef='screeningJoin']",
+            document, XPathConstants.NODE
         ));
         assertNotNull(xpath.evaluate(
             "//bpmn:sequenceFlow[@sourceRef='reconciliationGateway' and "

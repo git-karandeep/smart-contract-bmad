@@ -58,41 +58,63 @@ class TransferLifecycleWorkerCoverageTest {
         ));
 
         for (String screening : new String[] { "kyc", "aml", "sanctions" }) {
+            String waitId = screening.equals("kyc") ? "kycSubjectWait" : screening + "Wait";
             assertTrue((Boolean) xpath.evaluate(
-                "boolean(//bpmn:eventBasedGateway[@id='" + screening + "Wait'])",
+                "boolean(//bpmn:eventBasedGateway[@id='" + waitId + "'])",
                 document,
                 XPathConstants.BOOLEAN
             ));
             assertTrue((Boolean) xpath.evaluate(
-                "boolean(//bpmn:sequenceFlow[@sourceRef='" + screening + "Wait' and @targetRef='"
+                "boolean(//bpmn:sequenceFlow[@sourceRef='" + waitId + "' and @targetRef='"
                     + screening + "Result'])",
                 document,
                 XPathConstants.BOOLEAN
             ));
             assertTrue((Boolean) xpath.evaluate(
-                "boolean(//bpmn:sequenceFlow[@sourceRef='" + screening + "Wait' and @targetRef='"
+                "boolean(//bpmn:sequenceFlow[@sourceRef='" + waitId + "' and @targetRef='"
                     + screening + "Timeout'])",
                 document,
                 XPathConstants.BOOLEAN
             ));
-            assertTrue((Boolean) xpath.evaluate(
-                "boolean(//bpmn:sequenceFlow[@sourceRef='" + screening + "Result' "
-                    + "and @targetRef='screeningJoin'])",
-                document,
-                XPathConstants.BOOLEAN
-            ));
-            assertTrue((Boolean) xpath.evaluate(
-                "count(//bpmn:sequenceFlow[@sourceRef='" + screening
-                    + "Timeout' and @targetRef='screeningJoin']) = 0",
-                document,
-                XPathConstants.BOOLEAN
-            ));
-            assertTrue((Boolean) xpath.evaluate(
-                "boolean(//bpmn:sequenceFlow[@sourceRef='" + screening + "TimeoutPersist' "
-                    + "and @targetRef='screeningJoin'])",
-                document,
-                XPathConstants.BOOLEAN
-            ));
+            if (screening.equals("kyc")) {
+                assertTrue((Boolean) xpath.evaluate(
+                    "boolean(//bpmn:sequenceFlow[@sourceRef='kycResult' and "
+                        + "@targetRef='kycSubjectComplete'])",
+                    document,
+                    XPathConstants.BOOLEAN
+                ));
+                assertTrue((Boolean) xpath.evaluate(
+                    "boolean(//bpmn:sequenceFlow[@sourceRef='kycTimeoutPersist' and "
+                        + "@targetRef='kycSubjectComplete'])",
+                    document,
+                    XPathConstants.BOOLEAN
+                ));
+                assertTrue((Boolean) xpath.evaluate(
+                    "boolean(//bpmn:sequenceFlow[@sourceRef='kycScreeningRequests' "
+                        + "and @targetRef='screeningJoin'])",
+                    document,
+                    XPathConstants.BOOLEAN
+                ));
+            } else {
+                assertTrue((Boolean) xpath.evaluate(
+                    "boolean(//bpmn:sequenceFlow[@sourceRef='" + screening + "Result' "
+                        + "and @targetRef='screeningJoin'])",
+                    document,
+                    XPathConstants.BOOLEAN
+                ));
+                assertTrue((Boolean) xpath.evaluate(
+                    "count(//bpmn:sequenceFlow[@sourceRef='" + screening
+                        + "Timeout' and @targetRef='screeningJoin']) = 0",
+                    document,
+                    XPathConstants.BOOLEAN
+                ));
+                assertTrue((Boolean) xpath.evaluate(
+                    "boolean(//bpmn:sequenceFlow[@sourceRef='" + screening + "TimeoutPersist' "
+                        + "and @targetRef='screeningJoin'])",
+                    document,
+                    XPathConstants.BOOLEAN
+                ));
+            }
             assertTrue((Boolean) xpath.evaluate(
                 "boolean(//bpmn:sequenceFlow[@sourceRef='" + screening + "PolicyHold' "
                     + "and @targetRef='screeningJoin'])",

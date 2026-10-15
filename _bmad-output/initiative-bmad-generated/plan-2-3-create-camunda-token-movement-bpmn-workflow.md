@@ -70,3 +70,10 @@ The story asks for a complete durable lifecycle and explicit cancellation/error 
 **Commands:**
 - `.\gradlew.bat :modules:process-definitions:test :modules:process-workers:test :modules:contracts:test --no-daemon` — expected: BPMN shape, worker coverage, and workflow correlation tests pass.
 - `git diff --check` — expected: no whitespace errors.
+
+## Review Triage Log
+
+- **Finding:** Accepted cancellation ended only the non-interrupting event subprocess, leaving the main process active at screening waits and retaining their subscriptions/timers.
+- **Resolution:** Route only `cancellationOutcome = "CANCELLED"` to a BPMN terminate end event, which terminates the process instance and its outstanding waits. A rejected cancellation follows the event subprocess's ordinary end path, preserving the main process and transaction monitoring if submission won the atomic race.
+- **Regression coverage:** `TransferLifecycleBpmnTest` asserts the cancellation start remains non-interrupting, accepted cancellation selects the terminate end event, and rejected cancellation selects the ordinary event-subprocess end. `TransferLifecycleJobHandlersTest` covers successful cancellation and rejection after submission starts or wins the race.
+- **Verification:** `.\gradlew.bat :modules:process-definitions:test :modules:process-workers:test :modules:contracts:test --no-daemon` passed after the fix; `git diff --check` passed.

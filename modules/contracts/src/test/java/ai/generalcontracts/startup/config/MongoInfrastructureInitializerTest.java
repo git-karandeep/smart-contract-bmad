@@ -16,6 +16,7 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.IndexDefinition;
+import org.springframework.data.mongodb.core.index.IndexInfo;
 import org.springframework.data.mongodb.core.index.IndexOperations;
 
 class MongoInfrastructureInitializerTest {
@@ -59,10 +60,42 @@ class MongoInfrastructureInitializerTest {
         assertIndex(indexes.getAllValues(), "eventId", true);
         assertNamedIndex(indexes.getAllValues(), "provider_message_unique", "messageId", true);
         assertNamedIndex(indexes.getAllValues(), "screening_request_result_unique", "requestId", true);
+        assertNamedIndex(
+            indexes.getAllValues(),
+            "screening_instruction_type_subject_unique",
+            "subjectReference",
+            true
+        );
         assertIndex(indexes.getAllValues(), "publishedAt", false);
         assertIndex(indexes.getAllValues(), "idempotencyKey", true);
         assertIndex(indexes.getAllValues(), "occurredAt", false);
         assertIndex(indexes.getAllValues(), "transactionHash", true);
+    }
+
+    @Test
+    void dropsLegacySingleRequestPerTypeIndexBeforeCreatingSubjectScopedUniqueness() {
+        MongoTemplate mongoTemplate = mock(MongoTemplate.class);
+        IndexOperations indexOperations = mock(IndexOperations.class);
+        IndexInfo legacyIndex = mock(IndexInfo.class);
+        when(legacyIndex.getName()).thenReturn("screening_instruction_type_unique");
+        when(indexOperations.getIndexInfo()).thenReturn(java.util.List.of(legacyIndex));
+        when(mongoTemplate.collectionExists(anyString())).thenReturn(true);
+        when(mongoTemplate.indexOps(anyString())).thenReturn(indexOperations);
+        when(mongoTemplate.exists(any(org.springframework.data.mongodb.core.query.Query.class), eq("schema_migrations")))
+            .thenReturn(true);
+
+        new MongoInfrastructureInitializer(mongoTemplate).run(null);
+
+        verify(indexOperations).dropIndex("screening_instruction_type_unique");
+        org.mockito.ArgumentCaptor<IndexDefinition> indexes =
+            org.mockito.ArgumentCaptor.forClass(IndexDefinition.class);
+        verify(indexOperations, org.mockito.Mockito.times(7)).createIndex(indexes.capture());
+        assertNamedIndex(
+            indexes.getAllValues(),
+            "screening_instruction_type_subject_unique",
+            "subjectReference",
+            true
+        );
     }
 
     @Test

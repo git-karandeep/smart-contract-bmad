@@ -2,6 +2,7 @@ package ai.generalcontracts.startup.transfer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -9,6 +10,7 @@ import ai.generalcontracts.startup.workflow.ScreeningDecision;
 import ai.generalcontracts.startup.workflow.ScreeningResult;
 import ai.generalcontracts.startup.workflow.ScreeningType;
 import io.camunda.zeebe.client.ZeebeClient;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -37,7 +39,6 @@ class CamundaWorkflowCorrelationTest {
         ).variables(variables.capture());
         assertEquals(Map.of(
             "instructionId", "transfer-1",
-            "kycCorrelationKey", "transfer-1:KYC",
             "amlCorrelationKey", "transfer-1:AML",
             "sanctionsCorrelationKey", "transfer-1:SANCTIONS"
         ), variables.getValue());
@@ -65,6 +66,34 @@ class CamundaWorkflowCorrelationTest {
             .correlationKey("transfer-1:AML")
             .messageId("provider-1:message-1")
         ).variables(variables.capture());
+        assertEquals(Map.of(), variables.getValue());
+    }
+
+    @Test
+    void correlatesEachKycResultByItsUniqueScreeningRequest() {
+        ZeebeClient client = mock(ZeebeClient.class, RETURNS_DEEP_STUBS);
+        var command = client.newPublishMessageCommand()
+            .messageName("KycScreeningResult")
+            .correlationKey("transfer-1:KYC:subject-b")
+            .messageId("provider-1:message-2");
+        doAnswer(invocation -> invocation.getMock())
+            .when(command).timeToLive(Duration.ofMinutes(15));
+        ScreeningResult result = new ScreeningResult(
+            "provider-1",
+            "message-2",
+            "transfer-1",
+            "transfer-1:KYC:subject-b",
+            "request-correlation-b",
+            ScreeningType.KYC,
+            ScreeningDecision.APPROVED,
+            Instant.parse("2026-10-15T00:00:00Z")
+        );
+
+        new CamundaScreeningWorkflowCorrelator(client).correlate(result);
+
+        verify(command).timeToLive(Duration.ofMinutes(15));
+        ArgumentCaptor<Map<String, Object>> variables = mapCaptor();
+        verify(command).variables(variables.capture());
         assertEquals(Map.of(), variables.getValue());
     }
 

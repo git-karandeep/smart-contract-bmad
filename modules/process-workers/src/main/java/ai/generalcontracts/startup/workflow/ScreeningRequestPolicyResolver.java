@@ -5,4 +5,8 @@ import java.util.Optional;
 
 public interface ScreeningRequestPolicyResolver {
     Optional<ScreeningRequestPolicy> resolve(TransferInstruction instruction, ScreeningType screeningType);
+
+    default Optional<KycScreeningPolicy> resolveKyc(TransferInstruction instruction) {
+        return Optional.empty();
+    }
 }

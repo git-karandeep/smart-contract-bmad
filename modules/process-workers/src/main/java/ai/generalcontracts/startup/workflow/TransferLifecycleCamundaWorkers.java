@@ -36,7 +36,12 @@ public class TransferLifecycleCamundaWorkers {
 
     @JobWorker(type = "screening-timeout-kyc", autoComplete = false)
     public void timeoutKyc(JobClient client, ActivatedJob job) {
-        complete(client, job, handlers.recordScreeningTimeout(string(job, "instructionId"), ScreeningType.KYC));
+        String requestId = string(job, "screeningRequestId");
+        complete(client, job, requestId == null
+            ? handlers.recordScreeningTimeout(string(job, "instructionId"), ScreeningType.KYC)
+            : handlers.recordScreeningTimeout(
+                string(job, "instructionId"), ScreeningType.KYC, requestId
+            ));
     }
 
     @JobWorker(type = "screening-timeout-aml", autoComplete = false)
