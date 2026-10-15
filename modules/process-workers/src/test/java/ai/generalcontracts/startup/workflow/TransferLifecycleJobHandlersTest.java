@@ -23,25 +23,118 @@ import ai.generalcontracts.startup.transfer.TransferLifecycleService;
 import ai.generalcontracts.startup.transfer.TransferStatus;
 import java.time.Instant;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
 class TransferLifecycleJobHandlersTest {
     @Test
     void missingValidationPolicyPersistsFailureAndCannotReachSubmission() {
         Fixture fixture = new Fixture(TransferStatus.RECEIVED);
-        fixture.validationPolicy = instruction ->
-            TransferValidationPolicy.ValidationDecision.rejected("TRANSFER_VALIDATION_POLICY_UNAVAILABLE");
+        fixture.validationPolicy = TransferValidationPolicy.withEligibilityPolicy(null);
         TransferLifecycleJobHandlers handlers = fixture.handlers();
 
         Map<String, Object> validation = handlers.validate("transfer-1");
+        Map<String, Object> screening = handlers.requestScreening("transfer-1", ScreeningType.KYC);
         Map<String, Object> submission = handlers.submit("transfer-1", true);
 
         assertEquals(false, validation.get("validationPassed"));
+        assertEquals("TRANSFER_ELIGIBILITY_POLICY_UNAVAILABLE", validation.get("validationReasonCode"));
         assertEquals(TransferStatus.VALIDATION_FAILED, fixture.instruction.getStatus());
+        assertEquals("TRANSFER_ELIGIBILITY_POLICY_UNAVAILABLE", fixture.instruction.getReasonCode());
+        assertEquals(false, screening.get("kycRequestReady"));
         assertEquals("UNKNOWN", submission.get("submissionOutcome"));
+        verify(fixture.screeningRequests, never()).createAndPublish(any(), any());
         verify(fixture.submissionPort, never()).submit(any());
+    }
+
+    @Test
+    void configuredEligibilityPolicyAllowsStructurallyValidInstructionToScreening() {
+        Fixture fixture = new Fixture(TransferStatus.RECEIVED);
+        fixture.validationPolicy = TransferValidationPolicy.withEligibilityPolicy(instruction ->
+            new TransferValidationPolicy.ValidationDecision(true, null)
+        );
+
+        Map<String, Object> validation = fixture.handlers().validate("transfer-1");
+
+        assertEquals(true, validation.get("validationPassed"));
+        assertEquals(TransferStatus.SCREENING_PENDING, fixture.instruction.getStatus());
+        assertEquals(null, fixture.instruction.getReasonCode());
+    }
+
+    @Test
+    void structuralInstructionFailuresPersistStableReasonsAndCannotReachScreeningOrSubmission() {
+        List<Consumer<TransferInstruction>> invalidInstructions = List.of(
+            instruction -> instruction.setSourceWallet("not-an-address"),
+            instruction -> instruction.setDestinationWallet("0x1234"),
+            instruction -> instruction.setDestinationWallet(instruction.getSourceWallet().toUpperCase()),
+            instruction -> instruction.setTokenIdentifier("0x1234"),
+            instruction -> instruction.setAmount("0"),
+            instruction -> instruction.setAmount("1e3"),
+            instruction -> instruction.setNetworkId(0)
+        );
+        List<String> reasons = List.of(
+            "TRANSFER_SOURCE_WALLET_INVALID",
+            "TRANSFER_DESTINATION_WALLET_INVALID",
+            "TRANSFER_SOURCE_DESTINATION_IDENTICAL",
+            "TRANSFER_TOKEN_IDENTIFIER_INVALID",
+            "TRANSFER_AMOUNT_INVALID",
+            "TRANSFER_AMOUNT_INVALID",
+            "TRANSFER_NETWORK_ID_INVALID"
+        );
+
+        for (int index = 0; index < invalidInstructions.size(); index++) {
+            Fixture fixture = new Fixture(TransferStatus.RECEIVED);
+            invalidInstructions.get(index).accept(fixture.instruction);
+            fixture.validationPolicy = TransferValidationPolicy.withEligibilityPolicy(instruction ->
+                new TransferValidationPolicy.ValidationDecision(true, null)
+            );
+            TransferLifecycleJobHandlers handlers = fixture.handlers();
+
+            Map<String, Object> validation = handlers.validate("transfer-1");
+            Map<String, Object> screening = handlers.requestScreening("transfer-1", ScreeningType.KYC);
+            Map<String, Object> submission = handlers.submit("transfer-1", true);
+
+            assertEquals(false, validation.get("validationPassed"), reasons.get(index));
+            assertEquals(reasons.get(index), validation.get("validationReasonCode"));
+            assertEquals(TransferStatus.VALIDATION_FAILED, fixture.instruction.getStatus());
+            assertEquals(reasons.get(index), fixture.instruction.getReasonCode());
+            assertEquals(false, screening.get("kycRequestReady"));
+            assertEquals("UNKNOWN", submission.get("submissionOutcome"));
+            verify(fixture.screeningRequests, never()).createAndPublish(any(), any());
+            verify(fixture.submissionPort, never()).submit(any());
+        }
+    }
+
+    @Test
+    void eligibilityRejectionAndIntegrationFailureFailClosedWithStableReasons() {
+        TransferEligibilityPolicy[] policies = new TransferEligibilityPolicy[] {
+            instruction -> TransferValidationPolicy.ValidationDecision.rejected("TOKEN_NOT_ELIGIBLE"),
+            instruction -> {
+                throw new IllegalStateException("policy unavailable");
+            }
+        };
+        String[] reasons = { "TOKEN_NOT_ELIGIBLE", "TRANSFER_ELIGIBILITY_POLICY_FAILED" };
+
+        for (int index = 0; index < policies.length; index++) {
+            Fixture fixture = new Fixture(TransferStatus.RECEIVED);
+            fixture.validationPolicy = TransferValidationPolicy.withEligibilityPolicy(policies[index]);
+            TransferLifecycleJobHandlers handlers = fixture.handlers();
+
+            Map<String, Object> validation = handlers.validate("transfer-1");
+            Map<String, Object> screening = handlers.requestScreening("transfer-1", ScreeningType.KYC);
+            handlers.submit("transfer-1", true);
+
+            assertEquals(false, validation.get("validationPassed"));
+            assertEquals(reasons[index], validation.get("validationReasonCode"));
+            assertEquals(TransferStatus.VALIDATION_FAILED, fixture.instruction.getStatus());
+            assertEquals(reasons[index], fixture.instruction.getReasonCode());
+            assertEquals(false, screening.get("kycRequestReady"));
+            verify(fixture.screeningRequests, never()).createAndPublish(any(), any());
+            verify(fixture.submissionPort, never()).submit(any());
+        }
     }
 
     @Test

@@ -20,6 +20,37 @@ class TransferLifecycleBpmnTest {
 
         assertNotNull(xpath.evaluate("//*[@id='transfer-lifecycle' and @isExecutable='true']", document,
             XPathConstants.NODE));
+        assertNotNull(xpath.evaluate(
+            "//bpmn:serviceTask[@id='validateTransfer']"
+                + "/following-sibling::bpmn:exclusiveGateway[@id='validationGateway']",
+            document, XPathConstants.NODE
+        ));
+        assertNotNull(xpath.evaluate(
+            "//bpmn:sequenceFlow[@sourceRef='validationGateway' and "
+                + "@targetRef='validationRejected' and @id='flowInvalid']",
+            document, XPathConstants.NODE
+        ));
+        assertEquals("=validationPassed = false", xpath.evaluate(
+            "string(//bpmn:sequenceFlow[@id='flowInvalid']/bpmn:conditionExpression)",
+            document, XPathConstants.STRING
+        ));
+        assertNotNull(xpath.evaluate(
+            "//bpmn:sequenceFlow[@sourceRef='validationGateway' and "
+                + "@targetRef='screeningFork' and @id='flowValid']",
+            document, XPathConstants.NODE
+        ));
+        assertEquals("=validationPassed = true", xpath.evaluate(
+            "string(//bpmn:sequenceFlow[@id='flowValid']/bpmn:conditionExpression)",
+            document, XPathConstants.STRING
+        ));
+        assertNotNull(xpath.evaluate(
+            "//bpmn:endEvent[@id='validationRejected']",
+            document, XPathConstants.NODE
+        ));
+        assertEquals(0.0, (Double) xpath.evaluate(
+            "count(//bpmn:sequenceFlow[@sourceRef='validationRejected'])",
+            document, XPathConstants.NUMBER
+        ));
         assertEquals(3.0, (Double) xpath.evaluate(
             "count(//bpmn:message[contains(@name, 'ScreeningResult')])", document, XPathConstants.NUMBER
         ));

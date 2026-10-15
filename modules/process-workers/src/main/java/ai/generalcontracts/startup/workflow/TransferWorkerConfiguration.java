@@ -25,10 +25,16 @@ public class TransferWorkerConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    TransferValidationPolicy unavailableTransferValidationPolicy() {
+    TransferEligibilityPolicy unavailableTransferEligibilityPolicy() {
         return instruction -> TransferValidationPolicy.ValidationDecision.rejected(
-            "TRANSFER_VALIDATION_POLICY_UNAVAILABLE"
+            "TRANSFER_ELIGIBILITY_POLICY_UNAVAILABLE"
         );
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(TransferValidationPolicy.class)
+    TransferValidationPolicy transferValidationPolicy(TransferEligibilityPolicy eligibilityPolicy) {
+        return TransferValidationPolicy.withEligibilityPolicy(eligibilityPolicy);
     }
 
     @Bean
