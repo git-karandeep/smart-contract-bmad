@@ -24,6 +24,7 @@ import java.security.cert.X509Certificate;
 import java.time.Instant;
 import javax.security.auth.x500.X500Principal;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,10 +112,13 @@ class TransferRouteSecurityTest {
     }
 
     @Test
+    @Tag("api")
     void returnsClientErrorForInvalidAmountWithoutPersisting() throws Exception {
-        mockMvc.perform(post("/api/transfers").with(transferJwt()).with(trustedCertificate())
-                .contentType("application/json").content(BODY.replace("10.25", "1e3")))
-            .andExpect(status().isBadRequest());
+        for (String amount : new String[] {"1e3", "0", "0.0"}) {
+            mockMvc.perform(post("/api/transfers").with(transferJwt()).with(trustedCertificate())
+                    .contentType("application/json").content(BODY.replace("10.25", amount)))
+                .andExpect(status().isBadRequest());
+        }
         verify(lifecycle, never()).create(any());
     }
 
