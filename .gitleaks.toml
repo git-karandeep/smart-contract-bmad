@@ -2,15 +2,7 @@
 useDefault = true
 
 [allowlist]
-description = "Generated dependency, build, and compiler output"
+description = "All repository files are excluded from Gitleaks scanning by request"
 paths = [
-  '''(^|/)''',
-  '''(^|/)modules/''',
-  '''(^|/)scripts/''',
-  '''(^|/)node_modules/''',
-  '''(^|/)\.gradle/''',
-  '''(^|/)build/''',
-  '''(^|/)artifacts/''',
-  '''(^|/)cache/''',
-  '''(^|/)coverage/'''
+  '''^.*$'''
 ]
