@@ -210,6 +210,7 @@ class TransferLifecycleJobHandlersTest {
         assertEquals(ScreeningRequestStatus.TIMED_OUT.name(), kycRequest.getPublicationStatus());
         assertEquals(TransferStatus.COMPLIANCE_HOLD, fixture.instruction.getStatus());
         assertEquals("HOLD", aggregate.get("complianceOutcome"));
+        org.junit.jupiter.api.Assertions.assertTrue(fixture.instruction.getComplianceEvaluation().contains("outcome=HOLD"));
         assertEquals(false, gate.get("executionAllowed"));
         verify(fixture.submissionPort, never()).submit(any());
     }

@@ -125,4 +125,15 @@ class ScreeningDecisionAggregatorTest {
             ), false));
         }
     }
+
+    @Test
+    void arrivalOrderAndDuplicateDeliveryDoNotChangeTheOutcome() {
+        Map<ScreeningType, List<ScreeningDecision>> late = new EnumMap<>(ScreeningType.class);
+        late.put(ScreeningType.SANCTIONS, List.of(ScreeningDecision.APPROVED));
+        late.put(ScreeningType.KYC, List.of(ScreeningDecision.APPROVED, ScreeningDecision.APPROVED));
+        assertEquals(ComplianceOutcome.WAITING, aggregator.evaluate(late, EnumSet.allOf(ScreeningType.class), false));
+        late.put(ScreeningType.AML, List.of(ScreeningDecision.APPROVED));
+        assertEquals(ComplianceOutcome.APPROVED, aggregator.evaluate(late, EnumSet.allOf(ScreeningType.class), false));
+        assertEquals(ComplianceOutcome.HOLD, aggregator.evaluate(late, EnumSet.allOf(ScreeningType.class), true));
+    }
 }

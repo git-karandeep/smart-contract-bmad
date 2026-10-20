@@ -195,6 +195,7 @@ public class TransferLifecycleJobHandlers {
         }
 
         ComplianceOutcome outcome = decisionAggregator.evaluate(decisions, requiredTypes, holdPersisted);
+        recordComplianceEvaluation(instruction, decisions, requiredTypes, outcome, holdPersisted);
         persistComplianceOutcome(instruction, outcome);
         Map<String, Object> output = output("complianceOutcome", outcome.name());
         output.put("complianceApproved", outcome == ComplianceOutcome.APPROVED);
@@ -413,6 +414,32 @@ public class TransferLifecycleJobHandlers {
         return output("reconciliationMatched", true);
     }
 
+    private void recordComplianceEvaluation(
+        TransferInstruction instruction,
+        Map<ScreeningType, List<ScreeningDecision>> decisions,
+        Set<ScreeningType> requiredTypes,
+        ComplianceOutcome outcome,
+        boolean holdPersisted
+    ) {
+        if (instruction.getStatus() != TransferStatus.SCREENING_PENDING) {
+            return;
+        }
+        Set<String> policyVersions = new java.util.TreeSet<>();
+        for (ScreeningType type : requiredTypes) {
+            for (ScreeningRequestRecord request : requestRecords(instruction.getInstructionId(), type)) {
+                if (request.getPolicyVersion() != null) {
+                    policyVersions.add(type + "=" + request.getPolicyVersion());
+                }
+            }
+        }
+        StringBuilder summary = new StringBuilder("outcome=").append(outcome);
+        summary.append(";required=").append(requiredTypes);
+        summary.append(";decisions=").append(new java.util.TreeMap<>(decisions));
+        summary.append(";policyVersions=").append(policyVersions);
+        summary.append(";unresolvedOrInconsistent=").append(holdPersisted);
+        instruction.setComplianceEvaluation(summary.toString());
+        instructions.save(instruction);
+    }
     private void persistComplianceOutcome(TransferInstruction instruction, ComplianceOutcome outcome) {
         TransferStatus target = switch (outcome) {
             case APPROVED -> TransferStatus.COMPLIANCE_APPROVED;

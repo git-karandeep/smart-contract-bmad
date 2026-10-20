@@ -31,6 +31,7 @@ public class TransferInstruction {
     private String transactionHash;
     private Instant createdAt;
     private Instant updatedAt;
+    private String complianceEvaluation;
     @Version
     private Long version;
 
@@ -71,6 +72,8 @@ public class TransferInstruction {
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public String getComplianceEvaluation() { return complianceEvaluation; }
+    public void setComplianceEvaluation(String complianceEvaluation) { this.complianceEvaluation = complianceEvaluation; }
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }
 }
