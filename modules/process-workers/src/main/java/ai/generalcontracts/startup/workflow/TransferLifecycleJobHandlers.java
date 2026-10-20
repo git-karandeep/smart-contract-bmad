@@ -204,27 +204,66 @@ public class TransferLifecycleJobHandlers {
 
     public Map<String, Object> preExecutionGate(String instructionId, String complianceOutcome) {
         TransferInstruction instruction = instruction(instructionId);
-        boolean mandatoryApprovals = allMandatoryApproved(instructionId);
-        boolean allowed = "APPROVED".equals(complianceOutcome)
-            && (instruction.getStatus() == TransferStatus.COMPLIANCE_APPROVED
-                || instruction.getStatus() == TransferStatus.READY_FOR_EXECUTION)
-            && mandatoryApprovals
-            && safePolicyCheck(instruction);
+        String failure = preExecutionFailure(instruction, complianceOutcome);
+        boolean allowed = failure == null;
         if (allowed && instruction.getStatus() == TransferStatus.COMPLIANCE_APPROVED) {
             transition(instruction, TransferStatus.COMPLIANCE_APPROVED, TransferStatus.READY_FOR_EXECUTION, null, null);
-        } else if (instruction.getStatus() == TransferStatus.COMPLIANCE_APPROVED
-            || instruction.getStatus() == TransferStatus.READY_FOR_EXECUTION) {
-            transition(
-                instruction,
-                instruction.getStatus(),
-                TransferStatus.COMPLIANCE_HOLD,
-                "PRE_EXECUTION_POLICY_UNAVAILABLE_OR_FAILED",
-                null
-            );
+        } else if (!allowed && (instruction.getStatus() == TransferStatus.COMPLIANCE_APPROVED
+            || instruction.getStatus() == TransferStatus.READY_FOR_EXECUTION)) {
+            transition(instruction, instruction.getStatus(), TransferStatus.COMPLIANCE_HOLD, failure, null);
         }
-        return output("executionAllowed", allowed);
+        Map<String, Object> output = output("executionAllowed", allowed);
+        output.put("executionGateReasonCode", allowed ? "PRE_EXECUTION_GATE_PASSED" : failure);
+        output.put("executionGateInstructionId", instructionId);
+        return output;
     }
 
+    private String preExecutionFailure(TransferInstruction instruction, String complianceOutcome) {
+        TransferStatus status = instruction.getStatus();
+        if (status == TransferStatus.CANCELLED) {
+            return "PRE_EXECUTION_CANCELLED";
+        }
+        if (status != TransferStatus.COMPLIANCE_APPROVED && status != TransferStatus.READY_FOR_EXECUTION) {
+            return "PRE_EXECUTION_STATE_NOT_ELIGIBLE";
+        }
+        if (!"APPROVED".equals(complianceOutcome)) {
+            return "PRE_EXECUTION_COMPLIANCE_NOT_APPROVED";
+        }
+        if (!allMandatoryApproved(instruction.getInstructionId())) {
+            return "PRE_EXECUTION_APPROVAL_MISSING_OR_STALE";
+        }
+        if (instruction.getApprovedFingerprint() == null
+            || !instruction.getApprovedFingerprint().equals(approvalFingerprint(instruction))) {
+            return "PRE_EXECUTION_INSTRUCTION_CHANGED";
+        }
+        try {
+            if (!validationPolicy.validate(instruction).valid()) {
+                return "PRE_EXECUTION_VALIDATION_FAILED";
+            }
+        } catch (RuntimeException unavailable) {
+            return "PRE_EXECUTION_VALIDATION_FAILED";
+        }
+        return safePolicyCheck(instruction) ? null : "PRE_EXECUTION_POLICY_UNAVAILABLE_OR_FAILED";
+    }
+
+    private static String approvalFingerprint(TransferInstruction instruction) {
+        String identity = String.join(
+            "\u0000",
+            String.valueOf(instruction.getSourceWallet()).toLowerCase(java.util.Locale.ROOT),
+            String.valueOf(instruction.getDestinationWallet()).toLowerCase(java.util.Locale.ROOT),
+            String.valueOf(instruction.getAmount()),
+            String.valueOf(instruction.getTokenIdentifier()).toLowerCase(java.util.Locale.ROOT),
+            String.valueOf(instruction.getNetworkId())
+        );
+        try {
+            return java.util.HexFormat.of().formatHex(
+                java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(identity.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+            );
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
+        }
+    }
     public Map<String, Object> submit(String instructionId, boolean executionAllowed) {
         TransferInstruction instruction = instruction(instructionId);
         if (executionAllowed && instruction.getStatus() == TransferStatus.TRANSACTION_SUBMITTED
@@ -438,6 +477,9 @@ public class TransferLifecycleJobHandlers {
         summary.append(";policyVersions=").append(policyVersions);
         summary.append(";unresolvedOrInconsistent=").append(holdPersisted);
         instruction.setComplianceEvaluation(summary.toString());
+        if (outcome == ComplianceOutcome.APPROVED) {
+            instruction.setApprovedFingerprint(approvalFingerprint(instruction));
+        }
         instructions.save(instruction);
     }
     private void persistComplianceOutcome(TransferInstruction instruction, ComplianceOutcome outcome) {

@@ -259,6 +259,65 @@ class TransferLifecycleJobHandlersTest {
     }
 
     @Test
+    void gateRecordsStableReasonAndHoldsWhenInstructionChangedAfterApproval() {
+        Fixture fixture = approvedFixture();
+        TransferLifecycleJobHandlers handlers = fixture.handlers();
+        Map<String, Object> aggregate = handlers.aggregateCompliance("transfer-1");
+        fixture.instruction.setAmount("500");
+
+        Map<String, Object> gate = handlers.preExecutionGate("transfer-1", (String) aggregate.get("complianceOutcome"));
+
+        assertEquals(false, gate.get("executionAllowed"));
+        assertEquals("PRE_EXECUTION_INSTRUCTION_CHANGED", gate.get("executionGateReasonCode"));
+        assertEquals("transfer-1", gate.get("executionGateInstructionId"));
+        assertEquals(TransferStatus.COMPLIANCE_HOLD, fixture.instruction.getStatus());
+    }
+
+    @Test
+    void gateBlocksRevokedEligibilityCancellationAndMissingApproval() {
+        Fixture revoked = approvedFixture();
+        TransferLifecycleJobHandlers handlers = revoked.handlers();
+        Map<String, Object> aggregate = handlers.aggregateCompliance("transfer-1");
+        revoked.validationPolicy = current -> TransferValidationPolicy.ValidationDecision.rejected("REVOKED");
+        Map<String, Object> gate = revoked.handlers().preExecutionGate("transfer-1", (String) aggregate.get("complianceOutcome"));
+        assertEquals("PRE_EXECUTION_VALIDATION_FAILED", gate.get("executionGateReasonCode"));
+
+        Fixture cancelled = new Fixture(TransferStatus.CANCELLED);
+        assertEquals(
+            "PRE_EXECUTION_CANCELLED",
+            cancelled.handlers().preExecutionGate("transfer-1", "APPROVED").get("executionGateReasonCode")
+        );
+
+        Fixture stale = new Fixture(TransferStatus.COMPLIANCE_APPROVED);
+        assertEquals(
+            "PRE_EXECUTION_COMPLIANCE_NOT_APPROVED",
+            stale.handlers().preExecutionGate("transfer-1", "WAITING").get("executionGateReasonCode")
+        );
+
+        Fixture missing = new Fixture(TransferStatus.COMPLIANCE_APPROVED);
+        assertEquals(
+            "PRE_EXECUTION_APPROVAL_MISSING_OR_STALE",
+            missing.handlers().preExecutionGate("transfer-1", "APPROVED").get("executionGateReasonCode")
+        );
+        verify(cancelled.submissionPort, never()).submit(any());
+    }
+
+    private Fixture approvedFixture() {
+        Fixture fixture = new Fixture(TransferStatus.SCREENING_PENDING);
+        for (ScreeningType type : ScreeningType.values()) {
+            when(fixture.requests.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                .thenReturn(Optional.of(request(type, ScreeningRequestStatus.PUBLISHED)));
+            when(fixture.results.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                .thenReturn(Optional.of(result(type, ScreeningDecision.APPROVED)));
+        }
+        when(fixture.requests.findAllByInstructionIdAndScreeningType("transfer-1", "KYC"))
+            .thenReturn(List.of(kycRequest("kyc-request-a", "subject-a", 1)));
+        when(fixture.results.findAllByInstructionIdAndScreeningType("transfer-1", "KYC"))
+            .thenReturn(List.of(requestResult("kyc-request-a", ScreeningType.KYC, ScreeningDecision.APPROVED)));
+        return fixture;
+    }
+
+    @Test
     void correlatesAndRequiresApprovalFromEveryKycSubjectBeforeExecution() {
         Fixture fixture = new Fixture(TransferStatus.SCREENING_PENDING);
         ScreeningRequestRecord firstRequest = kycRequest("kyc-request-a", "subject-a", 2);

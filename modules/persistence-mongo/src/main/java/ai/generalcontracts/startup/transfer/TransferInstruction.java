@@ -32,6 +32,7 @@ public class TransferInstruction {
     private Instant createdAt;
     private Instant updatedAt;
     private String complianceEvaluation;
+    private String approvedFingerprint;
     @Version
     private Long version;
 
@@ -74,6 +75,8 @@ public class TransferInstruction {
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
     public String getComplianceEvaluation() { return complianceEvaluation; }
     public void setComplianceEvaluation(String complianceEvaluation) { this.complianceEvaluation = complianceEvaluation; }
+    public String getApprovedFingerprint() { return approvedFingerprint; }
+    public void setApprovedFingerprint(String approvedFingerprint) { this.approvedFingerprint = approvedFingerprint; }
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }
 }
