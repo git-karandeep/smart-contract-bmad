@@ -24,3 +24,25 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
+val camundaProcessTestSourceSet = sourceSets.create("camundaProcessTest") {
+    java.srcDir("src/camundaProcessTest/java")
+}
+
+dependencies.add("camundaProcessTestImplementation", "io.camunda:camunda-process-test-java:8.9.0")
+
+configurations[camundaProcessTestSourceSet.implementationConfigurationName]
+    .extendsFrom(configurations.testImplementation.get())
+configurations[camundaProcessTestSourceSet.runtimeOnlyConfigurationName]
+    .extendsFrom(configurations.testRuntimeOnly.get())
+
+val camundaProcessTest by tasks.registering(Test::class) {
+    group = "verification"
+    description = "Runs Camunda process tests; requires Docker."
+    dependsOn(tasks.named("classes"))
+    dependsOn(tasks.named(camundaProcessTestSourceSet.classesTaskName))
+    dependsOn(":modules:process-definitions:processResources")
+    testClassesDirs = camundaProcessTestSourceSet.output.classesDirs
+    classpath = camundaProcessTestSourceSet.runtimeClasspath
+    useJUnitPlatform()
+}

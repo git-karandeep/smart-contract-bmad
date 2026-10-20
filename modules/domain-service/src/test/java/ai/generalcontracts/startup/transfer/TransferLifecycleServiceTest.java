@@ -122,6 +122,26 @@ class TransferLifecycleServiceTest {
     }
 
     @Test
+    void allowsUnknownSubmissionToBecomePendingOnlyForJournalBasedReconciliation() {
+        TransferInstruction unknown = instruction("10.25");
+        unknown.setStatus(TransferStatus.TRANSACTION_UNKNOWN);
+        when(repository.findById("transfer-id")).thenReturn(Optional.of(unknown));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TransferInstruction pending = service.transition(
+            "transfer-id",
+            TransferStatus.TRANSACTION_UNKNOWN,
+            TransferStatus.TRANSACTION_PENDING,
+            null,
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        );
+
+        assertEquals(TransferStatus.TRANSACTION_PENDING, pending.getStatus());
+        assertEquals("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            pending.getTransactionHash());
+    }
+
+    @Test
     void permitsCancellationFromReadyButNotAfterSubmissionHasStarted() {
         assertThrows(IllegalArgumentException.class, () -> service.transition(
             "transfer-id", TransferStatus.SUBMISSION_IN_PROGRESS, TransferStatus.CANCELLED, null, null

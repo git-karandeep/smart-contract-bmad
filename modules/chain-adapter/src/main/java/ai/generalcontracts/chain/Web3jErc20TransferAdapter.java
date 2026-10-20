@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import org.web3j.abi.FunctionEncoder;
@@ -66,6 +67,7 @@ public final class Web3jErc20TransferAdapter {
             || !authorizedSignerAddress.equals(normalizeAddress(command.source()))) {
             throw new IllegalArgumentException("Transfer does not match configured instruction or chain");
         }
+
         Integer decimals = configuredTokenDecimals.get(normalizeAddress(command.tokenContract()));
         if (decimals == null) {
             throw new IllegalArgumentException("Token contract is not configured for the selected network");
@@ -135,6 +137,10 @@ public final class Web3jErc20TransferAdapter {
                 TransferSubmission.Outcome.UNKNOWN, "CHAIN_SUBMISSION_OUTCOME_UNKNOWN"
             ));
         }
+    }
+
+    public Optional<TransferSubmission> findJournaledSubmission(String instructionId) {
+        return journal.find(instructionId);
     }
 
     private TransferSubmission persist(TransferSubmission submission) {

@@ -22,3 +22,6 @@
 - source_plan: `_bmad-output/initiative-bmad-generated/plan-epic-02-wallet.md`
   summary: Define and implement safe recovery for Camunda workflow launches left in `STARTING`.
   evidence: A process restart after persisting the launch claim can leave it unresolved; recovery needs runtime-backed lookup or durable idempotency semantics that are not configured or approved.
+- source_plan: `_bmad-output/initiative-bmad-generated/plan-aml-screening-bpmndi.md`
+  summary: Keep completed transfers reconcilable after a chain reorg and persist the resulting status correction.
+  evidence: The chain reorg event maps to an `UNKNOWN` workflow message, but completed instances have ended and the terminal replay path accepts a matching completed transaction hash without checking for reorg state.

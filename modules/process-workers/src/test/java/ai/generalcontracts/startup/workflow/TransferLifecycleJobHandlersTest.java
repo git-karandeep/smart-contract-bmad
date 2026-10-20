@@ -2,6 +2,7 @@ package ai.generalcontracts.startup.workflow;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -675,6 +676,107 @@ class TransferLifecycleJobHandlersTest {
         assertEquals("SUBMITTED", submitted.handlers().submit("transfer-1", true).get("submissionOutcome"));
         assertEquals("SUBMITTED", submitted.handlers().submit("transfer-1", true).get("submissionOutcome"));
         verify(submitted.submissionPort, never()).submit(any());
+    }
+
+    @Test
+    void unknownSubmissionRecoversOnlyFromMatchingJournaledHashAndNeverResubmits() {
+        Fixture fixture = new Fixture(TransferStatus.TRANSACTION_UNKNOWN);
+        String hash = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        when(fixture.submissionPort.findJournaledSubmission("transfer-1")).thenReturn(Optional.of(
+            submission(fixture, hash, TransferSubmission.Outcome.UNKNOWN)
+        ));
+
+        Map<String, Object> recovery = fixture.handlers().recoverUnknownSubmission("transfer-1");
+
+        assertEquals(true, recovery.get("recoveryHasTransactionHash"));
+        assertEquals(false, recovery.get("recoveryRequiresInvestigation"));
+        assertEquals("PENDING", recovery.get("transactionOutcome"));
+        assertEquals(hash, recovery.get("transactionHash"));
+        assertEquals(TransferStatus.TRANSACTION_PENDING, fixture.instruction.getStatus());
+        assertEquals(hash, fixture.instruction.getTransactionHash());
+        verify(fixture.submissionPort).findJournaledSubmission("transfer-1");
+        verify(fixture.submissionPort, never()).submit(any());
+
+        Map<String, Object> replay = fixture.handlers().recoverUnknownSubmission("transfer-1");
+
+        assertEquals(true, replay.get("recoveryHasTransactionHash"));
+        assertEquals(hash, replay.get("transactionHash"));
+        assertEquals("PENDING", replay.get("transactionOutcome"));
+        verify(fixture.submissionPort).findJournaledSubmission("transfer-1");
+    }
+
+    @Test
+    void unknownSubmissionRecoverySurfacesJournalLookupFailuresForRetry() {
+        Fixture fixture = new Fixture(TransferStatus.TRANSACTION_UNKNOWN);
+        when(fixture.submissionPort.findJournaledSubmission("transfer-1"))
+            .thenThrow(new IllegalStateException("journal unavailable"));
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> fixture.handlers().recoverUnknownSubmission("transfer-1")
+        );
+        assertEquals(TransferStatus.TRANSACTION_UNKNOWN, fixture.instruction.getStatus());
+        verify(fixture.submissionPort, never()).submit(any());
+    }
+
+    @Test
+    void unknownSubmissionWithoutJournaledHashStaysOnOperationalHold() {
+        Fixture fixture = new Fixture(TransferStatus.TRANSACTION_UNKNOWN);
+        when(fixture.submissionPort.findJournaledSubmission("transfer-1")).thenReturn(Optional.of(
+            submission(fixture, null, TransferSubmission.Outcome.UNKNOWN)
+        ));
+
+        Map<String, Object> recovery = fixture.handlers().recoverUnknownSubmission("transfer-1");
+
+        assertEquals(false, recovery.get("recoveryHasTransactionHash"));
+        assertEquals(true, recovery.get("recoveryRequiresInvestigation"));
+        assertEquals("JOURNALED_TRANSACTION_HASH_UNAVAILABLE", recovery.get("recoveryReasonCode"));
+        assertEquals(TransferStatus.TRANSACTION_UNKNOWN, fixture.instruction.getStatus());
+        verify(fixture.submissionPort, never()).submit(any());
+
+        Fixture missing = new Fixture(TransferStatus.TRANSACTION_UNKNOWN);
+        when(missing.submissionPort.findJournaledSubmission("transfer-1")).thenReturn(Optional.empty());
+        Map<String, Object> noJournal = missing.handlers().recoverUnknownSubmission("transfer-1");
+        assertEquals(false, noJournal.get("recoveryHasTransactionHash"));
+        assertEquals(TransferStatus.TRANSACTION_UNKNOWN, missing.instruction.getStatus());
+        verify(missing.submissionPort, never()).submit(any());
+    }
+
+    @Test
+    void unknownSubmissionRejectsJournalRecordForDifferentInstructionData() {
+        Fixture fixture = new Fixture(TransferStatus.TRANSACTION_UNKNOWN);
+        String hash = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        TransferSubmission incorrect = new TransferSubmission(
+            "transfer-1", 1337, fixture.instruction.getTokenIdentifier(),
+            fixture.instruction.getSourceWallet(), fixture.instruction.getDestinationWallet(),
+            "999", hash, TransferSubmission.Outcome.SUBMITTED, null
+        );
+        when(fixture.submissionPort.findJournaledSubmission("transfer-1")).thenReturn(Optional.of(incorrect));
+
+        Map<String, Object> recovery = fixture.handlers().recoverUnknownSubmission("transfer-1");
+
+        assertEquals(false, recovery.get("recoveryHasTransactionHash"));
+        assertEquals(true, recovery.get("recoveryRequiresInvestigation"));
+        assertEquals(TransferStatus.TRANSACTION_UNKNOWN, fixture.instruction.getStatus());
+        verify(fixture.submissionPort, never()).submit(any());
+    }
+
+    private TransferSubmission submission(
+        Fixture fixture,
+        String hash,
+        TransferSubmission.Outcome outcome
+    ) {
+        return new TransferSubmission(
+            "transfer-1",
+            1337,
+            fixture.instruction.getTokenIdentifier(),
+            fixture.instruction.getSourceWallet(),
+            fixture.instruction.getDestinationWallet(),
+            fixture.instruction.getAmount(),
+            hash,
+            outcome,
+            null
+        );
     }
 
     private ScreeningRequestRecord request(ScreeningType type, ScreeningRequestStatus status) {

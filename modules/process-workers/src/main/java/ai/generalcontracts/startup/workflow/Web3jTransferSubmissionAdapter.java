@@ -4,6 +4,7 @@ import ai.generalcontracts.chain.Erc20TransferCommand;
 import ai.generalcontracts.chain.TransferSubmission;
 import ai.generalcontracts.chain.Web3jErc20TransferAdapter;
 import ai.generalcontracts.startup.transfer.TransferInstruction;
+import java.util.Optional;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
@@ -28,5 +29,10 @@ public class Web3jTransferSubmissionAdapter implements TransferSubmissionPort {
             instruction.getDestinationWallet(),
             instruction.getAmount()
         ));
+    }
+
+    @Override
+    public Optional<TransferSubmission> findJournaledSubmission(String instructionId) {
+        return adapter.findJournaledSubmission(instructionId);
     }
 }

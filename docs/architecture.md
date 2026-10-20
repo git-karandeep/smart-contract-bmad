@@ -304,7 +304,7 @@ Implemented by `chain-adapter` using Web3j. Responsibilities: nonce management (
 ### 6.3 Chain listener
 - Subscribes (WebSocket) with HTTP backfill from `listener_checkpoints`.
 - Stores raw events in `chain_events` (unique key makes ingestion idempotent).
-- **Confirmation depth:** event is `PENDING` until N confirmations; only then publishes a Zeebe message (`TxConfirmed`) correlated by `correlationId`.
+- **Confirmation depth:** event is `PENDING` until N confirmations; chain status events are emitted on the `chain.tx.*` Kafka topics and consumed by the application before reaching Camunda; 
 - **Reorg handling:** track `blockHash`; if hash mismatch at a prior block, roll back affected `chain_events`, mark dependent projections `REORGED`, and emit a compensation message.
 
 ### 6.4 Consistency and reconciliation
@@ -354,7 +354,7 @@ flowchart TD
 - Approval thresholds, routing, and compliance flags live in **DMN tables** (versioned alongside BPMN), not hard-coded.
 
 ### 7.5 Message correlation
-`chain-listener` publishes `TxConfirmed` with `correlationKey = correlationId` and a TTL long enough to cover the race where the message arrives before the process reaches the catch event.
+`PlatformEventConsumer` maps `chain.tx.submitted`, `chain.tx.confirmed`, `chain.tx.failed`, and `chain.tx.reorged` to `TransferTransactionResult` messages with a 15-minute TTL. The Kafka event's `businessId` is the transfer instruction ID and is used as the Camunda correlation key; the outcome-prefixed `eventId` is the idempotent message ID. Outcomes map to `PENDING`/not-finalized, `CONFIRMED`/finalized, `REVERTED`/finalized, and `UNKNOWN`/not-finalized respectively. The TTL covers messages buffered before the process reaches the catch event.
 
 ### 7.6 Operations
 - Operate for incident handling; alert on incident count and job-activation latency.

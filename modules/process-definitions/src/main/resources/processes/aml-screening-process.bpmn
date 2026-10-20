@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="transferDefinitions" name="Token transfer workflows" targetNamespace="https://generalcontracts.ai/workflows" exporter="Camunda Modeler" exporterVersion="5.52.0">
+  <bpmn:message id="amlResultMessage" name="AmlScreeningResult">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=amlCorrelationKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:collaboration id="Collaboration_1qpvwrb">
+    <bpmn:participant id="Participant_0ptzbug" processRef="aml-screening-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="aml-screening-process" name="AML screening" isExecutable="true">
+    <bpmn:documentation>Contract v1.0.0. Inputs: instructionId, amlCorrelationKey. Outputs: amlRequestReady, amlTimeoutPersisted. Outcome codes: APPROVED, REJECTED, MANUAL_REVIEW, RESTRICTED, ERROR, TIMED_OUT, HOLD. The instruction-keyed persisted screening requests and results are authoritative; timeout, missing, and exhausted technical outcomes remain fail-closed. Correlation is preserved by the declared screening message subscription. Deploy compatible revisions under this stable process ID and use Camunda's process version.</bpmn:documentation>
+    <bpmn:startEvent id="amlStart" name="Start AML screening" />
+    <bpmn:serviceTask id="requestAml" name="Request AML screening">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="screening-request-aml" retries="3" />
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="amlRequestGateway" name="AML request published?" default="flowAmlPolicyHold" />
+    <bpmn:eventBasedGateway id="amlWait" name="Await AML result or timeout" />
+    <bpmn:intermediateCatchEvent id="amlResult" name="AML result">
+      <bpmn:messageEventDefinition messageRef="amlResultMessage" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="amlTimeout" name="AML timeout">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT15M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="amlTimeoutPersist" name="Persist AML timeout hold">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="screening-timeout-aml" retries="3" />
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="amlPolicyHold" name="Persist missing AML policy hold">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="screening-timeout-aml" retries="3" />
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="amlEnd" name="AML outcome persisted" />
+    <bpmn:sequenceFlow id="amlStartFlow" sourceRef="amlStart" targetRef="requestAml" />
+    <bpmn:sequenceFlow id="flowAmlRequestGateway" sourceRef="requestAml" targetRef="amlRequestGateway" />
+    <bpmn:sequenceFlow id="flowAmlRequestPublished" sourceRef="amlRequestGateway" targetRef="amlWait">
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=amlRequestReady = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowAmlPolicyHold" sourceRef="amlRequestGateway" targetRef="amlPolicyHold">
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=amlRequestReady = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowAmlResult" sourceRef="amlWait" targetRef="amlResult" />
+    <bpmn:sequenceFlow id="flowAmlTimeout" sourceRef="amlWait" targetRef="amlTimeout" />
+    <bpmn:sequenceFlow id="flowAmlResultJoin" sourceRef="amlResult" targetRef="amlEnd" />
+    <bpmn:sequenceFlow id="flowAmlTimeoutPersist" sourceRef="amlTimeout" targetRef="amlTimeoutPersist" />
+    <bpmn:sequenceFlow id="flowAmlTimeoutJoin" sourceRef="amlTimeoutPersist" targetRef="amlEnd" />
+    <bpmn:sequenceFlow id="flowAmlPolicyHoldJoin" sourceRef="amlPolicyHold" targetRef="amlEnd" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_aml-screening-process">
+    <bpmndi:BPMNPlane id="BPMNPlane_aml-screening-process" bpmnElement="Collaboration_1qpvwrb">
+      <bpmndi:BPMNShape id="Participant_0ptzbug_di" bpmnElement="Participant_0ptzbug" isHorizontal="true">
+        <dc:Bounds x="159" y="100" width="940" height="470" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amlStart_di" bpmnElement="amlStart">
+        <dc:Bounds x="210" y="220" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="204" y="256" width="49" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="requestAml_di" bpmnElement="requestAml">
+        <dc:Bounds x="310" y="198" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amlRequestGateway_di" bpmnElement="amlRequestGateway" isMarkerVisible="true">
+        <dc:Bounds x="500" y="213" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="494" y="263" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amlWait_di" bpmnElement="amlWait">
+        <dc:Bounds x="630" y="213" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="614" y="263" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amlResult_di" bpmnElement="amlResult">
+        <dc:Bounds x="760" y="120" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="752" y="156" width="53" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amlTimeout_di" bpmnElement="amlTimeout">
+        <dc:Bounds x="760" y="330" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="747" y="366" width="62" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amlTimeoutPersist_di" bpmnElement="amlTimeoutPersist">
+        <dc:Bounds x="870" y="308" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amlPolicyHold_di" bpmnElement="amlPolicyHold">
+        <dc:Bounds x="630" y="470" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amlEnd_di" bpmnElement="amlEnd">
+        <dc:Bounds x="1042" y="330" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1088" y="334.5" width="68" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="amlStartFlow_di" bpmnElement="amlStartFlow">
+        <di:waypoint x="246" y="238" />
+        <di:waypoint x="310" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowAmlRequestGateway_di" bpmnElement="flowAmlRequestGateway">
+        <di:waypoint x="430" y="238" />
+        <di:waypoint x="500" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowAmlRequestPublished_di" bpmnElement="flowAmlRequestPublished">
+        <di:waypoint x="550" y="238" />
+        <di:waypoint x="630" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowAmlPolicyHold_di" bpmnElement="flowAmlPolicyHold">
+        <di:waypoint x="525" y="263" />
+        <di:waypoint x="525" y="510" />
+        <di:waypoint x="630" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowAmlResult_di" bpmnElement="flowAmlResult">
+        <di:waypoint x="655" y="213" />
+        <di:waypoint x="655" y="138" />
+        <di:waypoint x="760" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowAmlTimeout_di" bpmnElement="flowAmlTimeout">
+        <di:waypoint x="655" y="263" />
+        <di:waypoint x="655" y="348" />
+        <di:waypoint x="760" y="348" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowAmlResultJoin_di" bpmnElement="flowAmlResultJoin">
+        <di:waypoint x="796" y="138" />
+        <di:waypoint x="1060" y="138" />
+        <di:waypoint x="1060" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowAmlTimeoutPersist_di" bpmnElement="flowAmlTimeoutPersist">
+        <di:waypoint x="796" y="348" />
+        <di:waypoint x="870" y="348" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowAmlTimeoutJoin_di" bpmnElement="flowAmlTimeoutJoin">
+        <di:waypoint x="990" y="348" />
+        <di:waypoint x="1042" y="348" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowAmlPolicyHoldJoin_di" bpmnElement="flowAmlPolicyHoldJoin">
+        <di:waypoint x="750" y="510" />
+        <di:waypoint x="1060" y="510" />
+        <di:waypoint x="1060" y="366" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

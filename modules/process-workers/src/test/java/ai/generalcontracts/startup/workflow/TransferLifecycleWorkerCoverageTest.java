@@ -17,17 +17,19 @@ import org.w3c.dom.Document;
 class TransferLifecycleWorkerCoverageTest {
     @Test
     void everyBpmnServiceTaskHasARegisteredCamundaJobWorker() throws Exception {
-        Document document = parse();
-        var xpath = XPathFactory.newInstance().newXPath();
-        xpath.setNamespaceContext(new TransferLifecycleBpmnTestNamespaceContext());
-        var nodes = (org.w3c.dom.NodeList) xpath.evaluate(
-            "//bpmn:serviceTask/bpmn:extensionElements/zeebe:taskDefinition/@type",
-            document,
-            XPathConstants.NODESET
-        );
         Set<String> bpmnTypes = new HashSet<>();
-        for (int index = 0; index < nodes.getLength(); index++) {
-            bpmnTypes.add(nodes.item(index).getNodeValue());
+        for (String artifact : generatedArtifacts()) {
+            Document document = parse("/generated-processes/" + artifact);
+            var xpath = XPathFactory.newInstance().newXPath();
+            xpath.setNamespaceContext(new TransferLifecycleBpmnTestNamespaceContext());
+            var nodes = (org.w3c.dom.NodeList) xpath.evaluate(
+                "//bpmn:serviceTask/bpmn:extensionElements/zeebe:taskDefinition/@type",
+                document,
+                XPathConstants.NODESET
+            );
+            for (int index = 0; index < nodes.getLength(); index++) {
+                bpmnTypes.add(nodes.item(index).getNodeValue());
+            }
         }
 
         Set<String> workerTypes = new HashSet<>();
@@ -39,6 +41,60 @@ class TransferLifecycleWorkerCoverageTest {
         }
 
         assertEquals(bpmnTypes, workerTypes);
+    }
+
+    @Test
+    void generatedCallTargetsAndUnknownSubmissionRecoveryRemainFailClosed() throws Exception {
+        Document document = parse("/generated-processes/transfer-lifecycle.bpmn");
+        var xpath = XPathFactory.newInstance().newXPath();
+        xpath.setNamespaceContext(new TransferLifecycleBpmnTestNamespaceContext());
+
+        for (String[] call : new String[][] {
+            {"kycScreeningCall", "kyc-screening-process"},
+            {"amlScreeningCall", "aml-screening-process"},
+            {"sanctionsScreeningCall", "sanctions-screening-process"}
+        }) {
+            assertTrue((Boolean) xpath.evaluate(
+                "boolean(//bpmn:callActivity[@id='" + call[0] + "']"
+                    + "/bpmn:extensionElements/zeebe:calledElement[@processId='" + call[1]
+                    + "' and @propagateAllParentVariables='false' and @propagateAllChildVariables='false'])",
+                document,
+                XPathConstants.BOOLEAN
+            ));
+            assertTrue((Boolean) xpath.evaluate(
+                "boolean(//bpmn:callActivity[@id='" + call[0]
+                    + "']/bpmn:extensionElements/zeebe:ioMapping/zeebe:input)",
+                document,
+                XPathConstants.BOOLEAN
+            ));
+        }
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:serviceTask[@id='recoverUnknownSubmission']"
+                + "/bpmn:extensionElements/zeebe:taskDefinition"
+                + "[@type='transfer-recover-unknown' and @retries='3'])",
+            document,
+            XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:sequenceFlow[@id='flowUnknownRecoveryHash' "
+                + "and @targetRef='transactionResult' and contains(bpmn:conditionExpression, "
+                + "'recoveryHasTransactionHash')])",
+            document,
+            XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:exclusiveGateway[@id='unknownRecoveryGateway' "
+                + "and @default='flowUnknownRecoveryHold'])",
+            document,
+            XPathConstants.BOOLEAN
+        ));
+        assertTrue((Boolean) xpath.evaluate(
+            "boolean(//bpmn:serviceTask[@id='submitTransfer']"
+                + "/bpmn:extensionElements/zeebe:taskDefinition[@retries='1'])",
+            document,
+            XPathConstants.BOOLEAN
+        ));
+        assertEquals(4, generatedArtifacts().length);
     }
 
     @Test
@@ -160,7 +216,11 @@ class TransferLifecycleWorkerCoverageTest {
     }
 
     private Document parse() throws Exception {
-        try (InputStream model = getClass().getResourceAsStream("/processes/transfer-lifecycle.bpmn")) {
+        return parse("/processes/transfer-lifecycle.bpmn");
+    }
+
+    private Document parse(String resource) throws Exception {
+        try (InputStream model = getClass().getResourceAsStream(resource)) {
             assertNotNull(model);
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
@@ -169,6 +229,15 @@ class TransferLifecycleWorkerCoverageTest {
             factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
             return factory.newDocumentBuilder().parse(model);
         }
+    }
+
+    private String[] generatedArtifacts() {
+        return new String[] {
+            "transfer-lifecycle.bpmn",
+            "kyc-screening-process.bpmn",
+            "aml-screening-process.bpmn",
+            "sanctions-screening-process.bpmn"
+        };
     }
 
     private static final class TransferLifecycleBpmnTestNamespaceContext

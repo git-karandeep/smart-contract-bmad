@@ -255,7 +255,9 @@ public class TransferLifecycleService {
             case TRANSACTION_CONFIRMED -> to == TransferStatus.RECONCILIATION_PENDING;
             case RECONCILIATION_PENDING -> to == TransferStatus.COMPLETED
                 || to == TransferStatus.RECONCILIATION_MISMATCH;
-            case TRANSACTION_UNKNOWN, RECONCILIATION_MISMATCH -> to == TransferStatus.COMPLIANCE_HOLD;
+            case TRANSACTION_UNKNOWN -> to == TransferStatus.TRANSACTION_PENDING
+                || to == TransferStatus.COMPLIANCE_HOLD;
+            case RECONCILIATION_MISMATCH -> to == TransferStatus.COMPLIANCE_HOLD;
             default -> false;
         };
     }

@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
@@ -113,7 +114,14 @@ public class TransferLifecycleJobHandlers {
             output.put("kycNotRequired", outcome.notRequired());
             if (!outcome.notRequired()) {
                 output.put("kycScreeningRequestIds", outcome.requestIds());
+            } else {
+                output.put("kycScreeningRequestIds", List.of());
             }
+        } else if (type == ScreeningType.KYC) {
+            output.put("kycNotRequired", false);
+            output.put("kycScreeningRequestIds", List.of());
+        } else {
+            output.put(timeoutVariable(type), false);
         }
         return output;
     }
@@ -340,6 +348,55 @@ public class TransferLifecycleJobHandlers {
             submission.transactionHash()
         );
         return submissionOutput("SUBMITTED", submission.transactionHash(), null);
+    }
+
+    public Map<String, Object> recoverUnknownSubmission(String instructionId) {
+        TransferInstruction instruction = instruction(instructionId);
+        if (instruction.getStatus() == TransferStatus.TRANSACTION_PENDING
+            && !blank(instruction.getTransactionHash())) {
+            return recoveredUnknownSubmission(instruction.getTransactionHash());
+        }
+        if (instruction.getStatus() != TransferStatus.TRANSACTION_UNKNOWN) {
+            return unknownRecoveryOutput(false, true, "TRANSFER_NOT_IN_UNKNOWN_SUBMISSION_STATE");
+        }
+        Optional<TransferSubmission> journaled = Objects.requireNonNull(
+            submissionPort.findJournaledSubmission(instructionId),
+            "Submission journal lookup returned null"
+        );
+        TransferSubmission record = journaled.orElse(null);
+        if (!validSubmission(instruction, record) || blank(record.transactionHash())) {
+            Map<String, Object> held = unknownRecoveryOutput(
+                false, true, "JOURNALED_TRANSACTION_HASH_UNAVAILABLE"
+            );
+            held.put("recoveryInstructionId", instructionId);
+            return held;
+        }
+
+        transition(
+            instruction,
+            TransferStatus.TRANSACTION_UNKNOWN,
+            TransferStatus.TRANSACTION_PENDING,
+            null,
+            record.transactionHash()
+        );
+        return recoveredUnknownSubmission(record.transactionHash());
+    }
+
+    private Map<String, Object> recoveredUnknownSubmission(String transactionHash) {
+        Map<String, Object> recovered = unknownRecoveryOutput(
+            true, false, "JOURNALED_TRANSACTION_HASH_FOUND"
+        );
+        recovered.put("transactionHash", transactionHash);
+        recovered.put("transactionOutcome", "PENDING");
+        recovered.put("finalized", false);
+        return recovered;
+    }
+
+    private Map<String, Object> unknownRecoveryOutput(boolean hasHash, boolean investigationRequired, String reason) {
+        Map<String, Object> output = output("recoveryHasTransactionHash", hasHash);
+        output.put("recoveryRequiresInvestigation", investigationRequired);
+        output.put("recoveryReasonCode", reason);
+        return output;
     }
 
     public Map<String, Object> cancel(String instructionId) {

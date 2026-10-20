@@ -72,6 +72,20 @@ class Web3jErc20TransferAdapterTest {
     }
 
     @Test
+    void exposesInstructionKeyedJournalLookupForWorkflowRecovery() {
+        TransferSubmission journaled = new TransferSubmission(
+            "transfer-1", 1337, TOKEN, SOURCE, DESTINATION, "10", HASH,
+            TransferSubmission.Outcome.UNKNOWN, "CHAIN_SUBMISSION_OUTCOME_UNKNOWN"
+        );
+        SubmissionJournal journal = mock(SubmissionJournal.class);
+        when(journal.find("transfer-1")).thenReturn(Optional.of(journaled));
+        Web3jErc20TransferAdapter adapter = adapter(mock(Web3j.class), mock(TransactionManager.class), journal);
+
+        assertEquals(Optional.of(journaled), adapter.findJournaledSubmission("transfer-1"));
+        verify(journal).find("transfer-1");
+    }
+
+    @Test
     void networkTokenAndSignerMismatchesNeverClaimOrSubmit() {
         TransactionManager manager = mock(TransactionManager.class);
         SubmissionJournal journal = mock(SubmissionJournal.class);

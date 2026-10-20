@@ -128,7 +128,7 @@ Idempotency and recovery preserve one logical transfer across retries, duplicate
 
 - [ ] **Not started**
 
-- [Epic 3 tokenization document](../../../docs/epics/epic-03-tokenization.md) — included in the epic set; the source document is empty.
+- [Epic 3 tokenization document](../../../docs/epics/epic-03-wallet-standardization.md) — included in the epic set; the source document is empty.
 - [Epic index](../../../docs/epics/README.md) — lists the current epic entry point.
 - [Story catalog](../../../docs/stories/README.md) — indexes story documents.
 - [Requirement-to-code traceability](../../../docs/traceability.md) — describes the path from requirements and stories to design, source, and tests.

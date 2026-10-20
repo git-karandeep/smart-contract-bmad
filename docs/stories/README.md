@@ -38,6 +38,17 @@
 - [Story 2.15: Implement audit trail, monitoring, and alerts](epic-02-stories/Story-2.15.md) — 5 points
 - [Story 2.16: Complete end-to-end transfer security testing](epic-02-stories/Story-2.16.md) — 5 points
 
+## Epic 3: Standardized BPMN Design and Reusable Workflow Generator
+
+- [Story 3.1: Build the BPMN standardization generator](epic-03-stories/Story-3.1.md)
+- [Story 3.2: Generate reusable screening processes](epic-03-stories/Story-3.2.md)
+- [Story 3.3: Invoke screening through Call Activities](epic-03-stories/Story-3.3.md)
+- [Story 3.4: Standardize screening retries and failures](epic-03-stories/Story-3.4.md)
+- [Story 3.5: Prevent unsafe payment resubmission](epic-03-stories/Story-3.5.md)
+- [Story 3.6: Produce a machine-readable generation report](epic-03-stories/Story-3.6.md)
+- [Story 3.7: Refactor sweep](epic-03-stories/Story-3.7.md)
+- [Story 3.8: Verify generated workflows in Camunda](epic-03-stories/Story-3.8.md)
+
 See the [epic index](../epics/README.md) and the
 [requirement-to-code traceability guide](../traceability.md) for the path from
 requirements and acceptance criteria to design, source, and tests.

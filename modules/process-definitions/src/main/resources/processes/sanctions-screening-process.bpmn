@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="transferDefinitions" name="Token transfer workflows" targetNamespace="https://generalcontracts.ai/workflows" exporter="Camunda Modeler" exporterVersion="5.52.0">
+  <bpmn:message id="sanctionsResultMessage" name="SanctionsScreeningResult">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=sanctionsCorrelationKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:collaboration id="Collaboration_0i1kpjz">
+    <bpmn:participant id="Participant_0p8ar9v" name="Sanctions Screening" processRef="sanctions-screening-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="sanctions-screening-process" name="SANCTIONS screening" isExecutable="true">
+    <bpmn:documentation>Contract v1.0.0. Inputs: instructionId, sanctionsCorrelationKey. Outputs: sanctionsRequestReady, sanctionsTimeoutPersisted. Outcome codes: APPROVED, REJECTED, MANUAL_REVIEW, RESTRICTED, ERROR, TIMED_OUT, HOLD. The instruction-keyed persisted screening requests and results are authoritative; timeout, missing, and exhausted technical outcomes remain fail-closed. Correlation is preserved by the declared screening message subscription. Deploy compatible revisions under this stable process ID and use Camunda's process version.</bpmn:documentation>
+    <bpmn:startEvent id="sanctionsStart" name="Start SANCTIONS screening" />
+    <bpmn:serviceTask id="requestSanctions" name="Request sanctions screening">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="screening-reque<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" exporter="Camunda Modeler" exporterVersion="5.48.0" id="transferDefinitions" name="Token transfer workflows" targetNamespace="https://generalcontracts.ai/workflows">
+    <bpmn:message id="amlResultMessage" name="AmlScreeningResult">
+        <bpmn:extensionElements>
+            <zeebe:subscription correlationKey="=amlCorrelationKey"/>
+        </bpmn:extensionElements>
+    </bpmn:message>
+    <bpmn:process id="aml-screening-process" isExecutable="true" name="AML screening">
+        <bpmn:documentation>Contract v1.0.0. Inputs: instructionId, amlCorrelationKey. Outputs: amlRequestReady, amlTimeoutPersisted. Outcome codes: APPROVED, REJECTED, MANUAL_REVIEW, RESTRICTED, ERROR, TIMED_OUT, HOLD. The instruction-keyed persisted screening requests and results are authoritative; timeout, missing, and exhausted technical outcomes remain fail-closed. Correlation is preserved by the declared screening message subscription. Deploy compatible revisions under this stable process ID and use Camunda's process version.</bpmn:documentation>
+        <bpmn:startEvent id="amlStart" name="Start AML screening"/>
+        <bpmn:serviceTask id="requestAml" name="Request AML screening">
+            <bpmn:extensionElements>
+                      <zeebe:taskDefinition retries="3" type="screening-request-aml"/>
+                </bpmn:extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:exclusiveGateway default="flowAmlPolicyHold" id="amlRequestGateway" name="AML request published?"/>
+        <bpmn:eventBasedGateway id="amlWait" name="Await AML result or timeout"/>
+        <bpmn:intermediateCatchEvent id="amlResult" name="AML result">
+            <bpmn:messageEventDefinition messageRef="amlResultMessage"/>
+        </bpmn:intermediateCatchEvent>
+        <bpmn:intermediateCatchEvent id="amlTimeout" name="AML timeout">
+            <bpmn:timerEventDefinition>
+                      <bpmn:timeDuration>PT15M</bpmn:timeDuration>
+                </bpmn:timerEventDefinition>
+        </bpmn:intermediateCatchEvent>
+        <bpmn:serviceTask id="amlTimeoutPersist" name="Persist AML timeout hold">
+            <bpmn:extensionElements>
+                      <zeebe:taskDefinition retries="3" type="screening-timeout-aml"/>
+                </bpmn:extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:serviceTask id="amlPolicyHold" name="Persist missing AML policy hold">
+            <bpmn:extensionElements>
+                      <zeebe:taskDefinition retries="3" type="screening-timeout-aml"/>
+                </bpmn:extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="amlStartFlow" sourceRef="amlStart" targetRef="requestAml"/>
+        <bpmn:sequenceFlow id="flowAmlRequestGateway" sourceRef="requestAml" targetRef="amlRequestGateway"/>
+        <bpmn:sequenceFlow id="flowAmlRequestPublished" sourceRef="amlRequestGateway" targetRef="amlWait">
+            <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=amlRequestReady = true</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="flowAmlPolicyHold" sourceRef="amlRequestGateway" targetRef="amlPolicyHold">
+            <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=amlRequestReady = false</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="flowAmlResult" sourceRef="amlWait" targetRef="amlResult"/>
+        <bpmn:sequenceFlow id="flowAmlTimeout" sourceRef="amlWait" targetRef="amlTimeout"/>
+        <bpmn:sequenceFlow id="flowAmlResultJoin" sourceRef="amlResult" targetRef="amlEnd"/>
+        <bpmn:sequenceFlow id="flowAmlTimeoutPersist" sourceRef="amlTimeout" targetRef="amlTimeoutPersist"/>
+        <bpmn:sequenceFlow id="flowAmlTimeoutJoin" sourceRef="amlTimeoutPersist" targetRef="amlEnd"/>
+        <bpmn:sequenceFlow id="flowAmlPolicyHoldJoin" sourceRef="amlPolicyHold" targetRef="amlEnd"/>
+        <bpmn:endEvent id="amlEnd" name="AML outcome persisted"/>
+    </bpmn:process>
+    <bpmndi:BPMNDiagram id="BPMNDiagram_aml-screening-process">
+        <bpmndi:BPMNPlane bpmnElement="aml-screening-process" id="BPMNPlane_aml-screening-process">
+            <bpmndi:BPMNShape bpmnElement="amlStart" id="amlStart_di">
+                <dc:Bounds height="36" width="36" x="100" y="220"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="requestAml" id="requestAml_di">
+                <dc:Bounds height="80" width="120" x="200" y="198"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="amlRequestGateway" id="amlRequestGateway_di" isMarkerVisible="true">
+                <dc:Bounds height="50" width="50" x="390" y="213"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="amlWait" id="amlWait_di">
+                <dc:Bounds height="50" width="50" x="520" y="213"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="amlResult" id="amlResult_di">
+                <dc:Bounds height="36" width="36" x="650" y="120"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="amlTimeout" id="amlTimeout_di">
+                <dc:Bounds height="36" width="36" x="650" y="330"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="amlTimeoutPersist" id="amlTimeoutPersist_di">
+                <dc:Bounds height="80" width="120" x="760" y="308"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="amlPolicyHold" id="amlPolicyHold_di">
+                <dc:Bounds height="80" width="120" x="520" y="470"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="amlEnd" id="amlEnd_di">
+                <dc:Bounds height="36" width="36" x="980" y="225"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge bpmnElement="amlStartFlow" id="amlStartFlow_di">
+                <di:waypoint x="136" y="238"/>
+                <di:waypoint x="200" y="238"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAmlRequestGateway" id="flowAmlRequestGateway_di">
+                <di:waypoint x="320" y="238"/>
+                <di:waypoint x="390" y="238"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAmlRequestPublished" id="flowAmlRequestPublished_di">
+                <di:waypoint x="440" y="238"/>
+                <di:waypoint x="520" y="238"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAmlPolicyHold" id="flowAmlPolicyHold_di">
+                <di:waypoint x="415" y="263"/>
+                <di:waypoint x="415" y="510"/>
+                <di:waypoint x="520" y="510"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAmlResult" id="flowAmlResult_di">
+                <di:waypoint x="545" y="213"/>
+                <di:waypoint x="545" y="138"/>
+                <di:waypoint x="650" y="138"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAmlTimeout" id="flowAmlTimeout_di">
+                <di:waypoint x="545" y="263"/>
+                <di:waypoint x="545" y="348"/>
+                <di:waypoint x="650" y="348"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAmlResultJoin" id="flowAmlResultJoin_di">
+                <di:waypoint x="686" y="138"/>
+                <di:waypoint x="900" y="138"/>
+                <di:waypoint x="900" y="243"/>
+                <di:waypoint x="980" y="243"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAmlTimeoutPersist" id="flowAmlTimeoutPersist_di">
+                <di:waypoint x="686" y="348"/>
+                <di:waypoint x="760" y="348"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAmlTimeoutJoin" id="flowAmlTimeoutJoin_di">
+                <di:waypoint x="880" y="348"/>
+                <di:waypoint x="930" y="348"/>
+                <di:waypoint x="930" y="243"/>
+                <di:waypoint x="980" y="243"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowAmlPolicyHoldJoin" id="flowAmlPolicyHoldJoin_di">
+                <di:waypoint x="640" y="510"/>
+                <di:waypoint x="950" y="510"/>
+                <di:waypoint x="950" y="243"/>
+                <di:waypoint x="980" y="243"/>
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+st-sanctions" retries="3" />
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="sanctionsRequestGateway" name="Sanctions request published?" default="flowSanctionsPolicyHold" />
+    <bpmn:eventBasedGateway id="sanctionsWait" name="Await sanctions result or timeout" />
+    <bpmn:intermediateCatchEvent id="sanctionsResult" name="Sanctions result">
+      <bpmn:messageEventDefinition messageRef="sanctionsResultMessage" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="sanctionsTimeout" name="Sanctions timeout">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT15M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="sanctionsTimeoutPersist" name="Persist sanctions timeout hold">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="screening-timeout-sanctions" retries="3" />
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="sanctionsPolicyHold" name="Persist missing sanctions policy hold">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="screening-timeout-sanctions" retries="3" />
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="sanctionsEnd" name="SANCTIONS outcome persisted" />
+    <bpmn:sequenceFlow id="sanctionsStartFlow" sourceRef="sanctionsStart" targetRef="requestSanctions" />
+    <bpmn:sequenceFlow id="flowSanctionsRequestGateway" sourceRef="requestSanctions" targetRef="sanctionsRequestGateway" />
+    <bpmn:sequenceFlow id="flowSanctionsRequestPublished" sourceRef="sanctionsRequestGateway" targetRef="sanctionsWait">
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=sanctionsRequestReady = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowSanctionsPolicyHold" sourceRef="sanctionsRequestGateway" targetRef="sanctionsPolicyHold">
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=sanctionsRequestReady = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowSanctionsResult" sourceRef="sanctionsWait" targetRef="sanctionsResult" />
+    <bpmn:sequenceFlow id="flowSanctionsTimeout" sourceRef="sanctionsWait" targetRef="sanctionsTimeout" />
+    <bpmn:sequenceFlow id="flowSanctionsResultJoin" sourceRef="sanctionsResult" targetRef="sanctionsEnd" />
+    <bpmn:sequenceFlow id="flowSanctionsTimeoutPersist" sourceRef="sanctionsTimeout" targetRef="sanctionsTimeoutPersist" />
+    <bpmn:sequenceFlow id="flowSanctionsTimeoutJoin" sourceRef="sanctionsTimeoutPersist" targetRef="sanctionsEnd" />
+    <bpmn:sequenceFlow id="flowSanctionsPolicyHoldJoin" sourceRef="sanctionsPolicyHold" targetRef="sanctionsEnd" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_sanctions-screening-process">
+    <bpmndi:BPMNPlane id="BPMNPlane_sanctions-screening-process" bpmnElement="Collaboration_0i1kpjz">
+      <bpmndi:BPMNShape id="Participant_0p8ar9v_di" bpmnElement="Participant_0p8ar9v" isHorizontal="true">
+        <dc:Bounds x="160" y="100" width="1020" height="470" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sanctionsStart_di" bpmnElement="sanctionsStart">
+        <dc:Bounds x="212" y="220" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="198" y="256" width="65" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="requestSanctions_di" bpmnElement="requestSanctions">
+        <dc:Bounds x="312" y="198" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sanctionsRequestGateway_di" bpmnElement="sanctionsRequestGateway" isMarkerVisible="true">
+        <dc:Bounds x="502" y="213" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="483" y="263" width="89" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sanctionsWait_di" bpmnElement="sanctionsWait">
+        <dc:Bounds x="632" y="213" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="618" y="263" width="79" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sanctionsResult_di" bpmnElement="sanctionsResult">
+        <dc:Bounds x="762" y="120" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="741" y="156" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sanctionsTimeout_di" bpmnElement="sanctionsTimeout">
+        <dc:Bounds x="762" y="330" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="736" y="366" width="88" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sanctionsTimeoutPersist_di" bpmnElement="sanctionsTimeoutPersist">
+        <dc:Bounds x="872" y="308" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sanctionsPolicyHold_di" bpmnElement="sanctionsPolicyHold">
+        <dc:Bounds x="632" y="470" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sanctionsEnd_di" bpmnElement="sanctionsEnd">
+        <dc:Bounds x="1092" y="322" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1138" y="326.5" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="sanctionsStartFlow_di" bpmnElement="sanctionsStartFlow">
+        <di:waypoint x="248" y="238" />
+        <di:waypoint x="312" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowSanctionsRequestGateway_di" bpmnElement="flowSanctionsRequestGateway">
+        <di:waypoint x="432" y="238" />
+        <di:waypoint x="502" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowSanctionsRequestPublished_di" bp<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" exporter="Camunda Modeler" exporterVersion="5.48.0" id="transferDefinitions" name="Token transfer workflows" targetNamespace="https://generalcontracts.ai/workflows">
+    <bpmn:message id="kycResultMessage" name="KycScreeningResult">
+            
+        <bpmn:extensionElements>
+            <zeebe:subscription correlationKey="=kycScreeningRequestId"/>
+        </bpmn:extensionElements>
+          
+    </bpmn:message>
+    <bpmn:process id="kyc-screening-process" isExecutable="true" name="KYC screening">
+        <bpmn:documentation>Contract v1.0.0. Inputs: instructionId. Outputs: kycRequestReady, kycNotRequired, kycScreeningRequestIds. Outcome codes: APPROVED, REJECTED, MANUAL_REVIEW, RESTRICTED, ERROR, TIMED_OUT, HOLD. The instruction-keyed persisted screening requests and results are authoritative; timeout, missing, and exhausted technical outcomes remain fail-closed. Correlation is preserved by the declared screening message subscription. Deploy compatible revisions under this stable process ID and use Camunda's process version.</bpmn:documentation>
+        <bpmn:startEvent id="kycStart" name="Start KYC screening"/>
+        <bpmn:serviceTask id="requestKyc" name="Request KYC screening">
+            <bpmn:extensionElements>
+                      <zeebe:taskDefinition retries="3" type="screening-request-kyc"/>
+                </bpmn:extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:exclusiveGateway default="flowKycPolicyHold" id="kycRequestGateway" name="KYC request published?"/>
+        <bpmn:serviceTask id="kycPolicyHold" name="Persist missing KYC policy hold">
+            <bpmn:extensionElements>
+                      <zeebe:taskDefinition retries="3" type="screening-timeout-kyc"/>
+                </bpmn:extensionElements>
+        </bpmn:serviceTask>
+        <bpmn:subProcess id="kycScreeningRequests" name="Await every required KYC subject">
+            <bpmn:multiInstanceLoopCharacteristics>
+                      <bpmn:extensionElements>
+                                <zeebe:loopCharacteristics inputCollection="=kycScreeningRequestIds" inputElement="kycScreeningRequestId"/>
+                          </bpmn:extensionElements>
+                </bpmn:multiInstanceLoopCharacteristics>
+            <bpmn:startEvent id="kycSubjectWaitStart" name="Wait for subject result"/>
+            <bpmn:eventBasedGateway id="kycSubjectWait" name="Await KYC result or timeout"/>
+            <bpmn:intermediateCatchEvent id="kycResult" name="KYC subject result">
+                      <bpmn:messageEventDefinition messageRef="kycResultMessage"/>
+                </bpmn:intermediateCatchEvent>
+            <bpmn:intermediateCatchEvent id="kycTimeout" name="KYC subject timeout">
+                      <bpmn:timerEventDefinition>
+                                <bpmn:timeDuration>PT15M</bpmn:timeDuration>
+                          </bpmn:timerEventDefinition>
+                </bpmn:intermediateCatchEvent>
+            <bpmn:serviceTask id="kycTimeoutPersist" name="Persist KYC subject timeout hold">
+                      <bpmn:extensionElements>
+                                <zeebe:taskDefinition retries="3" type="screening-timeout-kyc"/>
+                                <zeebe:ioMapping>
+                                          <zeebe:input source="=instructionId" target="instructionId"/>
+                                          <zeebe:input source="=kycScreeningRequestId" target="screeningRequestId"/>
+                                    </zeebe:ioMapping>
+                          </bpmn:extensionElements>
+                </bpmn:serviceTask>
+            <bpmn:endEvent id="kycSubjectComplete" name="KYC subject completed"/>
+            <bpmn:sequenceFlow id="flowKycSubjectStart" sourceRef="kycSubjectWaitStart" targetRef="kycSubjectWait"/>
+            <bpmn:sequenceFlow id="flowKycSubjectResult" sourceRef="kycSubjectWait" targetRef="kycResult"/>
+            <bpmn:sequenceFlow id="flowKycSubjectTimeout" sourceRef="kycSubjectWait" targetRef="kycTimeout"/>
+            <bpmn:sequenceFlow id="flowKycSubjectResultComplete" sourceRef="kycResult" targetRef="kycSubjectComplete"/>
+            <bpmn:sequenceFlow id="flowKycSubjectPersistTimeout" sourceRef="kycTimeout" targetRef="kycTimeoutPersist"/>
+            <bpmn:sequenceFlow id="flowKycSubjectTimeoutComplete" sourceRef="kycTimeoutPersist" targetRef="kycSubjectComplete"/>
+        </bpmn:subProcess>
+        <bpmn:sequenceFlow id="kycStartFlow" sourceRef="kycStart" targetRef="requestKyc"/>
+        <bpmn:sequenceFlow id="flowKycRequestGateway" sourceRef="requestKyc" targetRef="kycRequestGateway"/>
+        <bpmn:sequenceFlow id="flowKycRequestPublished" sourceRef="kycRequestGateway" targetRef="kycScreeningRequests">
+            <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=kycRequestReady = true and kycNotRequired != true</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="flowKycNotRequired" sourceRef="kycRequestGateway" targetRef="kycEnd">
+            <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=kycNotRequired = true</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="flowKycPolicyHold" sourceRef="kycRequestGateway" targetRef="kycPolicyHold">
+            <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=kycRequestReady = false</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="flowKycPolicyHoldJoin" sourceRef="kycPolicyHold" targetRef="kycEnd"/>
+        <bpmn:sequenceFlow id="flowKycRequestsJoin" sourceRef="kycScreeningRequests" targetRef="kycEnd"/>
+        <bpmn:endEvent id="kycEnd" name="KYC outcome persisted"/>
+    </bpmn:process>
+    <bpmndi:BPMNDiagram id="BPMNDiagram_kyc-screening-process">
+        <bpmndi:BPMNPlane bpmnElement="kyc-screening-process" id="BPMNPlane_kyc-screening-process">
+            <bpmndi:BPMNShape bpmnElement="kycStart" id="kycStart_di">
+                <dc:Bounds height="36" width="36" x="100" y="292"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="requestKyc" id="requestKyc_di">
+                <dc:Bounds height="80" width="100" x="200" y="270"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="kycRequestGateway" id="kycRequestGateway_di" isMarkerVisible="true">
+                <dc:Bounds height="50" width="50" x="365" y="285"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="kycPolicyHold" id="kycPolicyHold_di">
+                <dc:Bounds height="80" width="100" x="540" y="100"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="kycScreeningRequests" id="kycScreeningRequests_di" isExpanded="true">
+                <dc:Bounds height="240" width="640" x="500" y="190"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="kycSubjectWaitStart" id="kycSubjectWaitStart_di">
+                <dc:Bounds height="36" width="36" x="522" y="292"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="kycSubjectWait" id="kycSubjectWait_di">
+                <dc:Bounds height="50" width="50" x="595" y="285"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="kycResult" id="kycResult_di">
+                <dc:Bounds height="36" width="36" x="722" y="222"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="kycTimeout" id="kycTimeout_di">
+                <dc:Bounds height="36" width="36" x="722" y="362"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="kycTimeoutPersist" id="kycTimeoutPersist_di">
+                <dc:Bounds height="80" width="100" x="820" y="340"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="kycSubjectComplete" id="kycSubjectComplete_di">
+                <dc:Bounds height="36" width="36" x="1042" y="292"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="kycEnd" id="kycEnd_di">
+                <dc:Bounds height="36" width="36" x="1260" y="292"/>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge bpmnElement="kycStartFlow" id="kycStartFlow_di">
+                <di:waypoint x="136" y="310"/>
+                <di:waypoint x="200" y="310"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowKycRequestGateway" id="flowKycRequestGateway_di">
+                <di:waypoint x="300" y="310"/>
+                <di:waypoint x="365" y="310"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowKycRequestPublished" id="flowKycRequestPublished_di">
+                <di:waypoint x="415" y="310"/>
+                <di:waypoint x="500" y="310"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowKycNotRequired" id="flowKycNotRequired_di">
+                <di:waypoint x="390" y="335"/>
+                <di:waypoint x="390" y="455"/>
+                <di:waypoint x="1210" y="455"/>
+                <di:waypoint x="1210" y="310"/>
+                <di:waypoint x="1260" y="310"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowKycPolicyHold" id="flowKycPolicyHold_di">
+                <di:waypoint x="390" y="285"/>
+                <di:waypoint x="390" y="140"/>
+                <di:waypoint x="540" y="140"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowKycPolicyHoldJoin" id="flowKycPolicyHoldJoin_di">
+                <di:waypoint x="640" y="140"/>
+                <di:waypoint x="1200" y="140"/>
+                <di:waypoint x="1200" y="310"/>
+                <di:waypoint x="1260" y="310"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowKycRequestsJoin" id="flowKycRequestsJoin_di">
+                <di:waypoint x="1140" y="310"/>
+                <di:waypoint x="1260" y="310"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowKycSubjectStart" id="flowKycSubjectStart_di">
+                <di:waypoint x="558" y="310"/>
+                <di:waypoint x="595" y="310"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowKycSubjectResult" id="flowKycSubjectResult_di">
+                <di:waypoint x="620" y="285"/>
+                <di:waypoint x="620" y="240"/>
+                <di:waypoint x="722" y="240"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowKycSubjectTimeout" id="flowKycSubjectTimeout_di">
+                <di:waypoint x="620" y="335"/>
+                <di:waypoint x="620" y="380"/>
+                <di:waypoint x="722" y="380"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowKycSubjectResultComplete" id="flowKycSubjectResultComplete_di">
+                <di:waypoint x="740" y="258"/>
+                <di:waypoint x="740" y="310"/>
+                <di:waypoint x="1042" y="310"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowKycSubjectPersistTimeout" id="flowKycSubjectPersistTimeout_di">
+                <di:waypoint x="758" y="380"/>
+                <di:waypoint x="820" y="380"/>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge bpmnElement="flowKycSubjectTimeoutComplete" id="flowKycSubjectTimeoutComplete_di">
+                <di:waypoint x="870" y="340"/>
+                <di:waypoint x="870" y="310"/>
+                <di:waypoint x="1042" y="310"/>
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+mnElement="flowSanctionsRequestPublished">
+        <di:waypoint x="552" y="238" />
+        <di:waypoint x="632" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowSanctionsPolicyHold_di" bpmnElement="flowSanctionsPolicyHold">
+        <di:waypoint x="527" y="263" />
+        <di:waypoint x="527" y="510" />
+        <di:waypoint x="632" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowSanctionsResult_di" bpmnElement="flowSanctionsResult">
+        <di:waypoint x="657" y="213" />
+        <di:waypoint x="657" y="138" />
+        <di:waypoint x="762" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowSanctionsTimeout_di" bpmnElement="flowSanctionsTimeout">
+        <di:waypoint x="657" y="263" />
+        <di:waypoint x="657" y="348" />
+        <di:waypoint x="762" y="348" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowSanctionsResultJoin_di" bpmnElement="flowSanctionsResultJoin">
+        <di:waypoint x="798" y="138" />
+        <di:waypoint x="1110" y="138" />
+        <di:waypoint x="1110" y="322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowSanctionsTimeoutPersist_di" bpmnElement="flowSanctionsTimeoutPersist">
+        <di:waypoint x="798" y="348" />
+        <di:waypoint x="872" y="348" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowSanctionsTimeoutJoin_di" bpmnElement="flowSanctionsTimeoutJoin">
+        <di:waypoint x="992" y="348" />
+        <di:waypoint x="1094" y="348" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowSanctionsPolicyHoldJoin_di" bpmnElement="flowSanctionsPolicyHoldJoin">
+        <di:waypoint x="752" y="510" />
+        <di:waypoint x="1110" y="510" />
+        <di:waypoint x="1110" y="358" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
