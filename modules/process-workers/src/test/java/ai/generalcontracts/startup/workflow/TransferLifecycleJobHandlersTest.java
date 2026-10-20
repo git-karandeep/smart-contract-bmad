@@ -659,6 +659,24 @@ class TransferLifecycleJobHandlersTest {
         assertEquals(true, mismatchReplay.get("investigationRequired"));
     }
 
+    @Test
+    void workerRetryAfterUncertainSubmissionNeverSubmitsASecondTransaction() {
+        Fixture fixture = new Fixture(TransferStatus.TRANSACTION_UNKNOWN);
+        fixture.instruction.setTransactionHash("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        TransferLifecycleJobHandlers handlers = fixture.handlers();
+
+        for (int attempt = 0; attempt < 3; attempt++) {
+            assertEquals("UNKNOWN", handlers.submit("transfer-1", true).get("submissionOutcome"));
+        }
+
+        verify(fixture.submissionPort, never()).submit(any());
+        Fixture submitted = new Fixture(TransferStatus.TRANSACTION_SUBMITTED);
+        submitted.instruction.setTransactionHash("0xbbbb");
+        assertEquals("SUBMITTED", submitted.handlers().submit("transfer-1", true).get("submissionOutcome"));
+        assertEquals("SUBMITTED", submitted.handlers().submit("transfer-1", true).get("submissionOutcome"));
+        verify(submitted.submissionPort, never()).submit(any());
+    }
+
     private ScreeningRequestRecord request(ScreeningType type, ScreeningRequestStatus status) {
         return new ScreeningRequestRecord(
             "transfer-1:" + type.name(),

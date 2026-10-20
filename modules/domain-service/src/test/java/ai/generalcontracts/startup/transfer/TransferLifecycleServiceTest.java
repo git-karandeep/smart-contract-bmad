@@ -65,6 +65,24 @@ class TransferLifecycleServiceTest {
     }
 
     @Test
+    void concurrentDuplicateCreateReturnsTheWinnerAndConflictingRaceIsRejected() {
+        when(repository.findByTenantIdAndInitiatingPrincipalAndIdempotencyKey("tenant", "principal", "key"))
+            .thenReturn(Optional.empty());
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        TransferInstruction winner = service.create(command("10.25"));
+        org.mockito.Mockito.reset(repository);
+        when(repository.findByTenantIdAndInitiatingPrincipalAndIdempotencyKey("tenant", "principal", "key"))
+            .thenReturn(Optional.empty())
+            .thenReturn(Optional.of(winner))
+            .thenReturn(Optional.empty())
+            .thenReturn(Optional.of(winner));
+        when(repository.save(any())).thenThrow(new org.springframework.dao.DuplicateKeyException("duplicate"));
+
+        assertEquals(winner, service.create(command("10.2500")));
+        assertThrows(ResponseStatusException.class, () -> service.create(command("11")));
+    }
+
+    @Test
     void rejectsIdempotencyKeyReuseForDifferentInstructionData() {
         when(repository.findByTenantIdAndInitiatingPrincipalAndIdempotencyKey("tenant", "principal", "key"))
             .thenReturn(Optional.of(instruction("10.25")));
