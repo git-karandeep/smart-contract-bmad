@@ -691,6 +691,129 @@ class TransferLifecycleJobHandlersTest {
         );
     }
 
+    private static final String E2E_HASH = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    private void approveAll(Fixture fixture, ScreeningDecision kyc, ScreeningDecision aml, ScreeningDecision sanctions) {
+        ScreeningRequestRecord kycRequest = kycRequest("kyc-request-a", "subject-a", 1);
+        when(fixture.requests.findAllByInstructionIdAndScreeningType("transfer-1", "KYC"))
+            .thenReturn(List.of(kycRequest));
+        when(fixture.results.findAllByInstructionIdAndScreeningType("transfer-1", "KYC"))
+            .thenReturn(List.of(requestResult("kyc-request-a", ScreeningType.KYC, kyc)));
+        Map<ScreeningType, ScreeningDecision> others = Map.of(
+            ScreeningType.AML, aml, ScreeningType.SANCTIONS, sanctions
+        );
+        others.forEach((type, decision) -> {
+            when(fixture.requests.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                .thenReturn(Optional.of(request(type, ScreeningRequestStatus.PUBLISHED)));
+            when(fixture.results.findByInstructionIdAndScreeningType("transfer-1", type.name()))
+                .thenReturn(Optional.of(result(type, decision)));
+        });
+    }
+
+    private Map<String, Object> runToGate(Fixture fixture, TransferLifecycleJobHandlers handlers) {
+        Map<String, Object> aggregate = handlers.aggregateCompliance("transfer-1");
+        return handlers.preExecutionGate("transfer-1", (String) aggregate.get("complianceOutcome"));
+    }
+
+    private TransferSubmission submitted(Fixture fixture) {
+        return new TransferSubmission(
+            "transfer-1", 1337, fixture.instruction.getTokenIdentifier(), fixture.instruction.getSourceWallet(),
+            fixture.instruction.getDestinationWallet(), fixture.instruction.getAmount(), E2E_HASH,
+            TransferSubmission.Outcome.SUBMITTED, null
+        );
+    }
+
+    @Test
+    void endToEndEligibleTransferCompletesExactlyOnceAfterApprovalsSubmissionAndFinality() {
+        Fixture fixture = new Fixture(TransferStatus.SCREENING_PENDING);
+        approveAll(fixture, ScreeningDecision.APPROVED, ScreeningDecision.APPROVED, ScreeningDecision.APPROVED);
+        fixture.reconciliationPort = (instruction, hash) -> new TransferReconciliationPort.ReconciliationDecision(true, null);
+        when(fixture.submissionPort.submit(any())).thenReturn(submitted(fixture));
+        TransferLifecycleJobHandlers handlers = fixture.handlers();
+
+        Map<String, Object> gate = runToGate(fixture, handlers);
+        assertEquals(true, gate.get("executionAllowed"));
+        Map<String, Object> submission = handlers.submit("transfer-1", true);
+        assertEquals("SUBMITTED", submission.get("submissionOutcome"));
+        assertEquals(true, handlers.reconcile("transfer-1", E2E_HASH, "PENDING", false).get("reconciliationPending"));
+        assertEquals(true, handlers.reconcile("transfer-1", E2E_HASH, "CONFIRMED", true).get("reconciliationMatched"));
+        handlers.reconcile("transfer-1", E2E_HASH, "CONFIRMED", true);
+        handlers.submit("transfer-1", true);
+
+        assertEquals(TransferStatus.COMPLETED, fixture.instruction.getStatus());
+        verify(fixture.submissionPort, times(1)).submit(any());
+        verify(fixture.lifecycle, times(1)).transition(
+            anyString(), any(TransferStatus.class), org.mockito.ArgumentMatchers.eq(TransferStatus.COMPLETED),
+            nullable(String.class), nullable(String.class)
+        );
+    }
+
+    @Test
+    void endToEndScreeningFailuresNeverReachSubmissionOrCompletion() {
+        ScreeningDecision[][] scenarios = {
+            { ScreeningDecision.REJECTED, ScreeningDecision.APPROVED, ScreeningDecision.APPROVED },
+            { ScreeningDecision.APPROVED, ScreeningDecision.REJECTED, ScreeningDecision.APPROVED },
+            { ScreeningDecision.APPROVED, ScreeningDecision.APPROVED, ScreeningDecision.REJECTED },
+            { ScreeningDecision.REVIEW_REQUIRED, ScreeningDecision.APPROVED, ScreeningDecision.APPROVED },
+            { ScreeningDecision.APPROVED, ScreeningDecision.ERROR, ScreeningDecision.APPROVED },
+        };
+        for (ScreeningDecision[] scenario : scenarios) {
+            Fixture fixture = new Fixture(TransferStatus.SCREENING_PENDING);
+            approveAll(fixture, scenario[0], scenario[1], scenario[2]);
+            TransferLifecycleJobHandlers handlers = fixture.handlers();
+
+            Map<String, Object> gate = runToGate(fixture, handlers);
+            Map<String, Object> submission = handlers.submit("transfer-1", (Boolean) gate.get("executionAllowed"));
+
+            assertEquals(false, gate.get("executionAllowed"));
+            assertEquals("UNKNOWN", submission.get("submissionOutcome"));
+            assertTrue(fixture.instruction.getStatus() != TransferStatus.COMPLETED);
+            verify(fixture.submissionPort, never()).submit(any());
+        }
+    }
+
+    @Test
+    void endToEndRevertUnknownAndMismatchNeverProduceFalseCompletion() {
+        for (String outcome : new String[] { "REVERTED", "UNKNOWN", "REPLACED" }) {
+            Fixture fixture = new Fixture(TransferStatus.TRANSACTION_SUBMITTED);
+            fixture.instruction.setTransactionHash(E2E_HASH);
+            fixture.reconciliationPort = (instruction, hash) -> new TransferReconciliationPort.ReconciliationDecision(true, null);
+
+            fixture.handlers().reconcile("transfer-1", E2E_HASH, outcome, true);
+
+            assertTrue(fixture.instruction.getStatus() != TransferStatus.COMPLETED, outcome);
+            verify(fixture.submissionPort, never()).submit(any());
+        }
+        Fixture mismatch = new Fixture(TransferStatus.TRANSACTION_SUBMITTED);
+        mismatch.instruction.setTransactionHash(E2E_HASH);
+        mismatch.reconciliationPort = (instruction, hash) ->
+            new TransferReconciliationPort.ReconciliationDecision(false, "AMOUNT_MISMATCH");
+        mismatch.handlers().reconcile("transfer-1", E2E_HASH, "CONFIRMED", true);
+        assertTrue(mismatch.instruction.getStatus() != TransferStatus.COMPLETED);
+    }
+
+    @Test
+    void endToEndWorkflowOutputsContainNoWalletOrSigningData() {
+        Fixture fixture = new Fixture(TransferStatus.SCREENING_PENDING);
+        approveAll(fixture, ScreeningDecision.APPROVED, ScreeningDecision.APPROVED, ScreeningDecision.APPROVED);
+        fixture.reconciliationPort = (instruction, hash) -> new TransferReconciliationPort.ReconciliationDecision(true, null);
+        when(fixture.submissionPort.submit(any())).thenReturn(submitted(fixture));
+        TransferLifecycleJobHandlers handlers = fixture.handlers();
+
+        List<Map<String, Object>> outputs = new java.util.ArrayList<>();
+        outputs.add(handlers.aggregateCompliance("transfer-1"));
+        outputs.add(handlers.preExecutionGate("transfer-1", "APPROVED"));
+        outputs.add(handlers.submit("transfer-1", true));
+        outputs.add(handlers.reconcile("transfer-1", E2E_HASH, "CONFIRMED", true));
+
+        for (Map<String, Object> output : outputs) {
+            String text = output.toString().toLowerCase();
+            assertFalse(text.contains(fixture.instruction.getSourceWallet()), text);
+            assertFalse(text.contains(fixture.instruction.getDestinationWallet()), text);
+            assertFalse(text.contains("privatekey") || text.contains("secret") || text.contains("mnemonic"), text);
+        }
+    }
+
     private ScreeningResultRecord result(ScreeningType type, ScreeningDecision decision) {
         return new ScreeningResultRecord(
             type.name() + "-message",
