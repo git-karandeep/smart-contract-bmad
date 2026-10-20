@@ -23,6 +23,7 @@ so that transfers proceed only when their applicable KYC eligibility is approved
 ## Dependencies
 
 - Story 2.3 must provide the durable screening workflow and result-wait boundary.
+ under modules/process-definitions/src/main/resources/processes
 
 ## References
 
