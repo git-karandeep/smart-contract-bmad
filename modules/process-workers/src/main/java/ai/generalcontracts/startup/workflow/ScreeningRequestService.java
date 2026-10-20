@@ -86,7 +86,14 @@ public class ScreeningRequestService {
                 selected.providerId(),
                 type.name(),
                 selected.screeningVersion(),
-                now
+                now,
+                null,
+                selected.authorizedReferences(),
+                selected.policyVersion(),
+                null
+            );
+            request.setAcceptableDecisions(
+                selected.acceptableDecisions().stream().map(Enum::name).sorted().toList()
             );
         }
 

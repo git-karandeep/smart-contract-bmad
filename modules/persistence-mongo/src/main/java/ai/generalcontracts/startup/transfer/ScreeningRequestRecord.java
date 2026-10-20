@@ -1,6 +1,7 @@
 package ai.generalcontracts.startup.transfer;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
@@ -26,6 +27,7 @@ public class ScreeningRequestRecord {
     private Map<String, String> authorizedReferences;
     private String policyVersion;
     private Integer requiredSubjectCount;
+    private List<String> acceptableDecisions;
     private String publicationStatus;
     private String reasonCode;
     private Instant publishedAt;
@@ -136,6 +138,12 @@ public class ScreeningRequestRecord {
     }
     public String getPolicyVersion() { return policyVersion; }
     public Integer getRequiredSubjectCount() { return requiredSubjectCount; }
+    public List<String> getAcceptableDecisions() {
+        return acceptableDecisions == null ? List.of() : List.copyOf(acceptableDecisions);
+    }
+    public void setAcceptableDecisions(List<String> decisions) {
+        this.acceptableDecisions = decisions == null ? null : List.copyOf(decisions);
+    }
     public String getPublicationStatus() { return publicationStatus; }
     public String getReasonCode() { return reasonCode; }
     public Instant getPublishedAt() { return publishedAt; }

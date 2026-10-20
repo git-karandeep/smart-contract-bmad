@@ -343,6 +343,54 @@ class ScreeningRequestServiceTest {
     }
 
     @Test
+    void amlRequestCarriesOnlyConfiguredContextAndPolicyVersion() {
+        ScreeningRequestRepository repository = mock(ScreeningRequestRepository.class);
+        ScreeningRequestPublisher publisher = mock(ScreeningRequestPublisher.class);
+        AtomicReference<ScreeningRequestRecord> stored = new AtomicReference<>();
+        List<ScreeningRequestMessage> published = new ArrayList<>();
+        when(repository.findByRequestId("transfer-1:AML")).thenAnswer(call -> Optional.ofNullable(stored.get()));
+        when(repository.insert(any(ScreeningRequestRecord.class))).thenAnswer(call -> {
+            stored.set(call.getArgument(0));
+            return call.getArgument(0);
+        });
+        when(repository.save(any(ScreeningRequestRecord.class))).thenAnswer(call -> call.getArgument(0));
+        org.mockito.Mockito.doAnswer(call -> {
+            published.add(call.getArgument(0));
+            return null;
+        }).when(publisher).publish(any(ScreeningRequestMessage.class));
+        ScreeningRequestService service = new ScreeningRequestService(
+            repository,
+            (instruction, type) -> Optional.of(new ScreeningRequestPolicy(
+                "aml-provider", "aml-v3", "aml-policy-9", Map.of("caseRef", "opaque-case"),
+                java.util.Set.of(ScreeningDecision.APPROVED, ScreeningDecision.REVIEW_REQUIRED)
+            )),
+            publisher
+        );
+
+        service.createAndPublish(instruction(), ScreeningType.AML);
+
+        ScreeningRequestMessage message = published.get(0);
+        assertEquals("transfer-1:AML", message.screeningRequestId());
+        assertEquals("transfer-1", message.instructionId());
+        assertEquals("aml-policy-9", message.policyVersion());
+        assertEquals("aml-v3", message.screeningVersion());
+        assertEquals(Map.of("caseRef", "opaque-case"), message.authorizedReferences());
+        assertEquals(List.of("APPROVED", "REVIEW_REQUIRED"), stored.get().getAcceptableDecisions());
+    }
+
+    @Test
+    void policyCannotMarkRejectedOrErroneousResultsAcceptable() {
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () ->
+            new ScreeningRequestPolicy("p", "v", "pv", null, java.util.Set.of(ScreeningDecision.ERROR)));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () ->
+            new ScreeningRequestPolicy("p", "v", "pv", null, java.util.Set.of(ScreeningDecision.REJECTED)));
+        assertEquals(
+            java.util.Set.of(ScreeningDecision.APPROVED),
+            new ScreeningRequestPolicy("p", "v").acceptableDecisions()
+        );
+    }
+
+    @Test
     void missingProviderPolicyIsDurableNonApprovalAndDoesNotPublish() {
         ScreeningRequestRepository repository = mock(ScreeningRequestRepository.class);
         ScreeningRequestPublisher publisher = mock(ScreeningRequestPublisher.class);

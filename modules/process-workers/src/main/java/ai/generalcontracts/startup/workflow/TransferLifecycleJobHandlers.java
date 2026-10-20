@@ -181,7 +181,7 @@ public class TransferLifecycleJobHandlers {
                 }
                 ScreeningResultRecord result = resultByRequestId.get(request.getRequestId());
                 if (result != null) {
-                    typeDecisions.add(decision(result));
+                    typeDecisions.add(effectiveDecision(request, result));
                 } else {
                     holdPersisted = true;
                 }
@@ -584,6 +584,17 @@ public class TransferLifecycleJobHandlers {
         }
         return instructions.findById(id)
             .orElseThrow(() -> new IllegalStateException("Transfer instruction is not persisted"));
+    }
+
+    private ScreeningDecision effectiveDecision(ScreeningRequestRecord request, ScreeningResultRecord result) {
+        ScreeningDecision actual = decision(result);
+        if (request.getAcceptableDecisions().contains(actual.name())
+            && actual != ScreeningDecision.REJECTED
+            && actual != ScreeningDecision.ERROR
+            && actual != ScreeningDecision.RESTRICTED) {
+            return ScreeningDecision.APPROVED;
+        }
+        return actual;
     }
 
     private ScreeningDecision decision(ScreeningResultRecord result) {
