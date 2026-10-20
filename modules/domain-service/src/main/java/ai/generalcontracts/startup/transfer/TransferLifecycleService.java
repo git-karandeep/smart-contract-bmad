@@ -158,6 +158,7 @@ public class TransferLifecycleService {
     }
 
     private void appendAudit(TransferInstruction instruction, String eventType, String reasonCode, String actor) {
+        TransferOperationalSignals.emit(instruction);
         if (auditRepository == null) {
             return;
         }
@@ -170,7 +171,7 @@ public class TransferLifecycleService {
             reasonCode,
             actor,
             clock.instant()
-        ));
+        ).withTransactionHash(instruction.getTransactionHash()));
     }
 
     private TransferInstruction existingOrConflict(TransferInstruction current, String fingerprint) {

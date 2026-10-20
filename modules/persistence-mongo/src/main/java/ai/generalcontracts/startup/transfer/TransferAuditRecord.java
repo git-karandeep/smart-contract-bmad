@@ -16,6 +16,7 @@ public class TransferAuditRecord {
     private String status;
     private String reasonCode;
     private String actor;
+    private String transactionHash;
     private Instant occurredAt;
 
     public TransferAuditRecord() {
@@ -41,6 +42,12 @@ public class TransferAuditRecord {
         this.occurredAt = occurredAt;
     }
 
+    public TransferAuditRecord withTransactionHash(String hash) {
+        this.transactionHash = hash;
+        return this;
+    }
+
+    public String getTransactionHash() { return transactionHash; }
     public String getEventId() { return eventId; }
     public String getInstructionId() { return instructionId; }
     public String getCorrelationId() { return correlationId; }

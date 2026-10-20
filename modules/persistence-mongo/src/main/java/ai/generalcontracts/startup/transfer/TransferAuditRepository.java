@@ -1,6 +1,11 @@
 package ai.generalcontracts.startup.transfer;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import java.util.List;
+import org.springframework.data.repository.Repository;
 
-public interface TransferAuditRepository extends MongoRepository<TransferAuditRecord, String> {
+/** Append-only audit store: exposes insert-style save and reads, never update or delete. */
+public interface TransferAuditRepository extends Repository<TransferAuditRecord, String> {
+    <S extends TransferAuditRecord> S save(S record);
+
+    List<TransferAuditRecord> findByInstructionIdOrderByOccurredAtAsc(String instructionId);
 }
