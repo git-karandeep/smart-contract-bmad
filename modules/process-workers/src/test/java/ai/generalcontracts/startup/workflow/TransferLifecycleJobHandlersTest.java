@@ -606,6 +606,27 @@ class TransferLifecycleJobHandlersTest {
         assertEquals(TransferStatus.COMPLETED, fixture.instruction.getStatus());
     }
 
+    @Test
+    void revertedReplacedAndUnknownOutcomesNeverCompleteOrResubmit() {
+        String hash = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        for (Object[] row : new Object[][] {
+            {"REVERTED", true, TransferStatus.TRANSACTION_REVERTED},
+            {"REPLACED", false, TransferStatus.TRANSACTION_UNKNOWN},
+            {"UNKNOWN", false, TransferStatus.TRANSACTION_UNKNOWN}
+        }) {
+            Fixture fixture = new Fixture(TransferStatus.TRANSACTION_SUBMITTED);
+            fixture.instruction.setTransactionHash(hash);
+            Map<String, Object> result = fixture.handlers().reconcile(
+                "transfer-1", hash, (String) row[0], (Boolean) row[1]
+            );
+
+            assertEquals(false, result.get("reconciliationMatched"));
+            assertEquals(row[2], fixture.instruction.getStatus());
+            assertEquals(hash, fixture.instruction.getTransactionHash());
+            verify(fixture.submissionPort, never()).submit(any());
+        }
+    }
+
     private ScreeningRequestRecord request(ScreeningType type, ScreeningRequestStatus status) {
         return new ScreeningRequestRecord(
             "transfer-1:" + type.name(),
