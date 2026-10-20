@@ -40,10 +40,10 @@
     <bpmn:sequenceFlow id="sanctionsStartFlow" sourceRef="sanctionsStart" targetRef="requestSanctions" />
     <bpmn:sequenceFlow id="flowSanctionsRequestGateway" sourceRef="requestSanctions" targetRef="sanctionsRequestGateway" />
     <bpmn:sequenceFlow id="flowSanctionsRequestPublished" sourceRef="sanctionsRequestGateway" targetRef="sanctionsWait">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=sanctionsRequestReady = true</bpmn:conditionExpression>
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">sanctionsRequestReady = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="flowSanctionsPolicyHold" sourceRef="sanctionsRequestGateway" targetRef="sanctionsPolicyHold">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=sanctionsRequestReady = false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">sanctionsRequestReady = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="flowSanctionsResult" sourceRef="sanctionsWait" targetRef="sanctionsResult" />
     <bpmn:sequenceFlow id="flowSanctionsTimeout" sourceRef="sanctionsWait" targetRef="sanctionsTimeout" />
