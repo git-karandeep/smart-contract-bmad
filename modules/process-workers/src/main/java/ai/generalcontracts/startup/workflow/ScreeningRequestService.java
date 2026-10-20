@@ -64,6 +64,10 @@ public class ScreeningRequestService {
         } catch (RuntimeException unavailable) {
             policy = Optional.empty();
         }
+        if (type == ScreeningType.SANCTIONS && policy != null && policy.isPresent()
+            && !Set.of(ScreeningDecision.APPROVED).equals(policy.get().acceptableDecisions())) {
+            policy = Optional.empty();
+        }
         ScreeningRequestRecord request;
         if (policy.isEmpty()) {
             request = new ScreeningRequestRecord(

@@ -109,4 +109,20 @@ class ScreeningDecisionAggregatorTest {
             ), EnumSet.of(ScreeningType.AML, ScreeningType.SANCTIONS), false)
         );
     }
+
+    @Test
+    void sanctionsOutcomesStayDistinct() {
+        for (Object[] row : new Object[][] {
+            {ScreeningDecision.REJECTED, ComplianceOutcome.REJECTED},
+            {ScreeningDecision.REVIEW_REQUIRED, ComplianceOutcome.MANUAL_REVIEW},
+            {ScreeningDecision.ERROR, ComplianceOutcome.HOLD},
+            {ScreeningDecision.RESTRICTED, ComplianceOutcome.RESTRICTED}
+        }) {
+            assertEquals(row[1], aggregator.evaluate(Map.of(
+                ScreeningType.KYC, ScreeningDecision.APPROVED,
+                ScreeningType.AML, ScreeningDecision.APPROVED,
+                ScreeningType.SANCTIONS, (ScreeningDecision) row[0]
+            ), false));
+        }
+    }
 }

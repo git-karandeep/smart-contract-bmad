@@ -588,7 +588,8 @@ public class TransferLifecycleJobHandlers {
 
     private ScreeningDecision effectiveDecision(ScreeningRequestRecord request, ScreeningResultRecord result) {
         ScreeningDecision actual = decision(result);
-        if (request.getAcceptableDecisions().contains(actual.name())
+        if (ScreeningType.valueOf(request.getScreeningType()) != ScreeningType.SANCTIONS
+            && request.getAcceptableDecisions().contains(actual.name())
             && actual != ScreeningDecision.REJECTED
             && actual != ScreeningDecision.ERROR
             && actual != ScreeningDecision.RESTRICTED) {

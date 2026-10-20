@@ -391,6 +391,52 @@ class ScreeningRequestServiceTest {
     }
 
     @Test
+    void sanctionsRequestIsCorrelatedMinimizedAndCannotAcceptReview() {
+        ScreeningRequestRepository repository = mock(ScreeningRequestRepository.class);
+        ScreeningRequestPublisher publisher = mock(ScreeningRequestPublisher.class);
+        AtomicReference<ScreeningRequestRecord> stored = new AtomicReference<>();
+        List<ScreeningRequestMessage> published = new ArrayList<>();
+        when(repository.findByRequestId("transfer-1:SANCTIONS")).thenAnswer(call -> Optional.ofNullable(stored.get()));
+        when(repository.insert(any(ScreeningRequestRecord.class))).thenAnswer(call -> {
+            stored.set(call.getArgument(0));
+            return call.getArgument(0);
+        });
+        when(repository.save(any(ScreeningRequestRecord.class))).thenAnswer(call -> call.getArgument(0));
+        org.mockito.Mockito.doAnswer(call -> {
+            published.add(call.getArgument(0));
+            return null;
+        }).when(publisher).publish(any(ScreeningRequestMessage.class));
+
+        ScreeningRequestService accepted = new ScreeningRequestService(
+            repository,
+            (instruction, type) -> Optional.of(new ScreeningRequestPolicy(
+                "sanctions-provider", "s-v1", "s-policy-2", Map.of("partyRef", "opaque-party"), null
+            )),
+            publisher
+        );
+        assertTrue(accepted.createAndPublish(instruction(), ScreeningType.SANCTIONS).ready());
+        ScreeningRequestMessage message = published.get(0);
+        assertEquals("transfer-1:SANCTIONS", message.screeningRequestId());
+        assertEquals(ScreeningType.SANCTIONS, message.screeningType());
+        assertEquals("s-policy-2", message.policyVersion());
+        assertEquals(Map.of("partyRef", "opaque-party"), message.authorizedReferences());
+
+        stored.set(null);
+        published.clear();
+        ScreeningRequestService lenient = new ScreeningRequestService(
+            repository,
+            (instruction, type) -> Optional.of(new ScreeningRequestPolicy(
+                "sanctions-provider", "s-v1", "s-policy-2", null,
+                java.util.Set.of(ScreeningDecision.APPROVED, ScreeningDecision.REVIEW_REQUIRED)
+            )),
+            publisher
+        );
+        assertFalse(lenient.createAndPublish(instruction(), ScreeningType.SANCTIONS).ready());
+        assertTrue(published.isEmpty());
+        assertEquals(ScreeningRequestStatus.POLICY_UNAVAILABLE.name(), stored.get().getPublicationStatus());
+    }
+
+    @Test
     void missingProviderPolicyIsDurableNonApprovalAndDoesNotPublish() {
         ScreeningRequestRepository repository = mock(ScreeningRequestRepository.class);
         ScreeningRequestPublisher publisher = mock(ScreeningRequestPublisher.class);
