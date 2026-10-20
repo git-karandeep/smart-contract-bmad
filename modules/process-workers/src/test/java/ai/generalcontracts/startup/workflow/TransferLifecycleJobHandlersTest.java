@@ -627,6 +627,38 @@ class TransferLifecycleJobHandlersTest {
         }
     }
 
+    @Test
+    void replayedReconciliationDoesNotRepeatTransitionsAndMismatchRaisesInvestigation() {
+        String hash = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        Fixture ok = new Fixture(TransferStatus.TRANSACTION_PENDING);
+        ok.instruction.setTransactionHash(hash);
+        ok.reconciliationPort = (instruction, transactionHash) ->
+            new TransferReconciliationPort.ReconciliationDecision(true, null);
+        TransferLifecycleJobHandlers handlers = ok.handlers();
+        assertEquals(true, handlers.reconcile("transfer-1", hash, "CONFIRMED", true).get("reconciliationMatched"));
+        org.mockito.Mockito.clearInvocations(ok.lifecycle);
+
+        Map<String, Object> replay = handlers.reconcile("transfer-1", hash, "CONFIRMED", true);
+
+        assertEquals(true, replay.get("reconciliationMatched"));
+        assertEquals(true, replay.get("reconciliationReplay"));
+        org.mockito.Mockito.verifyNoInteractions(ok.lifecycle);
+
+        Fixture bad = new Fixture(TransferStatus.TRANSACTION_PENDING);
+        bad.instruction.setTransactionHash(hash);
+        bad.reconciliationPort = (instruction, transactionHash) ->
+            new TransferReconciliationPort.ReconciliationDecision(false, "AMOUNT_MISMATCH");
+        TransferLifecycleJobHandlers badHandlers = bad.handlers();
+        Map<String, Object> mismatch = badHandlers.reconcile("transfer-1", hash, "CONFIRMED", true);
+        assertEquals(false, mismatch.get("reconciliationMatched"));
+        assertEquals("AMOUNT_MISMATCH", mismatch.get("reconciliationReasonCode"));
+        assertEquals(true, mismatch.get("investigationRequired"));
+        assertEquals(TransferStatus.RECONCILIATION_MISMATCH, bad.instruction.getStatus());
+        Map<String, Object> mismatchReplay = badHandlers.reconcile("transfer-1", hash, "CONFIRMED", true);
+        assertEquals("AMOUNT_MISMATCH", mismatchReplay.get("reconciliationReasonCode"));
+        assertEquals(true, mismatchReplay.get("investigationRequired"));
+    }
+
     private ScreeningRequestRecord request(ScreeningType type, ScreeningRequestStatus status) {
         return new ScreeningRequestRecord(
             "transfer-1:" + type.name(),

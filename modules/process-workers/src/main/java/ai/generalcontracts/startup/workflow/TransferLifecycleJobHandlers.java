@@ -387,6 +387,10 @@ public class TransferLifecycleJobHandlers {
         boolean finalized
     ) {
         TransferInstruction instruction = instruction(instructionId);
+        Map<String, Object> replay = replayTerminalReconciliation(instruction, transactionHash);
+        if (replay != null) {
+            return replay;
+        }
         if ("PENDING".equals(transactionOutcome) && !finalized && !blank(transactionHash)) {
             boolean hashMatches = !blank(instruction.getTransactionHash())
                 && instruction.getTransactionHash().equalsIgnoreCase(transactionHash);
@@ -409,7 +413,12 @@ public class TransferLifecycleJobHandlers {
         }
         if (!"CONFIRMED".equals(transactionOutcome) || !finalized || blank(transactionHash)) {
             holdUncertainTransaction(instruction, transactionOutcome);
-            return output("reconciliationMatched", false);
+            Map<String, Object> held = output("reconciliationMatched", false);
+            held.put("investigationRequired", true);
+            held.put("reconciliationReasonCode", "REVERTED".equals(transactionOutcome)
+                ? "CHAIN_TRANSACTION_REVERTED"
+                : "CHAIN_OUTCOME_UNCERTAIN");
+            return held;
         }
 
         String hash = transactionHash;
@@ -447,10 +456,29 @@ public class TransferLifecycleJobHandlers {
             );
             Map<String, Object> output = output("reconciliationMatched", false);
             output.put("reconciliationReasonCode", reason);
+            output.put("investigationRequired", true);
             return output;
         }
         transition(instruction, TransferStatus.RECONCILIATION_PENDING, TransferStatus.COMPLETED, null, hash);
         return output("reconciliationMatched", true);
+    }
+
+    private Map<String, Object> replayTerminalReconciliation(TransferInstruction instruction, String transactionHash) {
+        boolean sameTransaction = !blank(transactionHash) && !blank(instruction.getTransactionHash())
+            && instruction.getTransactionHash().equalsIgnoreCase(transactionHash);
+        if (instruction.getStatus() == TransferStatus.COMPLETED && sameTransaction) {
+            Map<String, Object> output = output("reconciliationMatched", true);
+            output.put("reconciliationReplay", true);
+            return output;
+        }
+        if (instruction.getStatus() == TransferStatus.RECONCILIATION_MISMATCH) {
+            Map<String, Object> output = output("reconciliationMatched", false);
+            output.put("reconciliationReasonCode", instruction.getReasonCode());
+            output.put("investigationRequired", true);
+            output.put("reconciliationReplay", true);
+            return output;
+        }
+        return null;
     }
 
     private void recordComplianceEvaluation(
