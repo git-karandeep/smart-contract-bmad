@@ -6,13 +6,19 @@ pragma solidity ^0.8.20;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {ERC20Capped} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
+import {ERC20Pausable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title MyToken
- * @notice ERC-20 token with owner-only minting, a hard supply cap, and burning.
+ * @notice ERC-20 token with owner-only minting, a hard supply cap, burning, and an
+ *         owner-controlled pause. While paused, every balance movement (transfer,
+ *         transferFrom, mint, burn) reverts with `EnforcedPause`; the owner cannot
+ *         move tokens or mint while paused. Standard ERC-20 balance and allowance
+ *         checks revert with `ERC20InsufficientBalance` / `ERC20InsufficientAllowance`.
+ *         The workflow adapter calls the standard `transfer(address,uint256)`.
  */
-contract MyToken is ERC20, ERC20Burnable, ERC20Capped, Ownable {
+contract MyToken is ERC20, ERC20Burnable, ERC20Capped, ERC20Pausable, Ownable {
     /**
      * @param name_          Token name, e.g. "My Token"
      * @param symbol_        Token symbol, e.g. "MTK"
@@ -37,10 +43,20 @@ contract MyToken is ERC20, ERC20Burnable, ERC20Capped, Ownable {
         _mint(to, amount);
     }
 
-    // Required override: ERC20 and ERC20Capped both hook into _update
+    /// @notice Halt all token movement. Owner only.
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @notice Resume token movement. Owner only.
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    // Required override: ERC20, ERC20Capped and ERC20Pausable all hook into _update
     function _update(address from, address to, uint256 value)
         internal
-        override(ERC20, ERC20Capped)
+        override(ERC20, ERC20Capped, ERC20Pausable)
     {
         super._update(from, to, value);
     }
