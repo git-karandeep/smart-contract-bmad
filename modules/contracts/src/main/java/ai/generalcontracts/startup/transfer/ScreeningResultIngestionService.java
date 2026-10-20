@@ -55,11 +55,17 @@ public class ScreeningResultIngestionService {
     }
 
     public IngestionOutcome ingest(ScreeningResult result, String signature) {
+        if (result == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Screening result is malformed");
+        }
         if (!authenticator.isAuthenticated(result, signature)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Screening provider authentication failed");
         }
         var expected = requests.findByRequestId(result.screeningRequestId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Screening request not found"));
+        if (neverDispatched(expected)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Screening request not found");
+        }
         try {
             validator.validate(result, expected);
         } catch (IllegalArgumentException invalid) {
@@ -92,6 +98,14 @@ public class ScreeningResultIngestionService {
         }
 
         return IngestionOutcome.DUPLICATE;
+    }
+
+    private boolean neverDispatched(ScreeningRequestRecord request) {
+        String status = request.getPublicationStatus();
+        return ScreeningRequestStatus.POLICY_UNAVAILABLE.name().equals(status)
+            || ScreeningRequestStatus.INVALID_SUBJECT_DATA.name().equals(status)
+            || ScreeningRequestStatus.NOT_REQUIRED.name().equals(status)
+            || ScreeningRequestStatus.PUBLICATION_FAILED.name().equals(status);
     }
 
     private boolean matches(ScreeningResultRecord record, ScreeningResult result) {

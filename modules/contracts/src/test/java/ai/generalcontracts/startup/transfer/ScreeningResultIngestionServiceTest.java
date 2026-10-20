@@ -93,6 +93,31 @@ class ScreeningResultIngestionServiceTest {
     }
 
     @Test
+    void rejectsMalformedUnknownAndNeverDispatchedRequestsWithoutPersisting() {
+        assertThrows(ResponseStatusException.class, () -> service.ingest(null, "valid"));
+
+        ScreeningResult unknown = new ScreeningResult(
+            "provider-1", "message-9", "transfer-1", "missing-request", "transfer-1:KYC",
+            ScreeningType.KYC, ScreeningDecision.APPROVED, result().screenedAt()
+        );
+        when(authenticator.isAuthenticated(unknown, "valid")).thenReturn(true);
+        when(requests.findByRequestId("missing-request")).thenReturn(Optional.empty());
+        assertThrows(ResponseStatusException.class, () -> service.ingest(unknown, "valid"));
+
+        ScreeningRequestRecord policyUnavailable = new ScreeningRequestRecord(
+            "request-1", "transfer-1:KYC", "transfer-1", null, "KYC", null,
+            Instant.parse("2026-10-11T20:00:00Z"), ScreeningRequestStatus.POLICY_UNAVAILABLE,
+            "SCREENING_POLICY_UNAVAILABLE"
+        );
+        when(authenticator.isAuthenticated(result(), "valid")).thenReturn(true);
+        when(requests.findByRequestId("request-1")).thenReturn(Optional.of(policyUnavailable));
+        assertThrows(ResponseStatusException.class, () -> service.ingest(result(), "valid"));
+
+        verify(results, never()).save(any());
+        verify(correlator, never()).correlate(any());
+    }
+
+    @Test
     void rejectsUnauthenticatedAndMismatchedResultsBeforePersistence() {
         when(authenticator.isAuthenticated(result(), "invalid")).thenReturn(false);
         assertThrows(ResponseStatusException.class, () -> service.ingest(result(), "invalid"));
