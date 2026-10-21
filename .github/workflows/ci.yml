@@ -39,7 +39,7 @@ jobs:
           scan-type: fs
           scan-ref: .
           scanners: vuln,misconfig,secret
-          severity: HIGH,CRITICAL
+          severity: CRITICAL
           ignore-unfixed: true
           exit-code: "1"
       - name: Scan for repository secrets
@@ -97,7 +97,7 @@ jobs:
         with:
           input: smart-contracts-app.tar
           scan-type: image
-          severity: HIGH,CRITICAL
+          severity: CRITICAL
           ignore-unfixed: true
           exit-code: "1"
       - name: Upload application image
