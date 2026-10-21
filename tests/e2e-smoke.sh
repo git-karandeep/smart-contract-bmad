@@ -145,7 +145,7 @@ printf '%s\n' 'e2e-event:{"eventId":"e2e-event","eventType":"ChainTxConfirmed","
   | "${compose[@]}" exec -T kafka kafka-console-producer --bootstrap-server kafka:29092 --topic chain.tx.confirmed --property parse.key=true --property key.separator=:
 
 for attempt in $(seq 1 30); do
-  if "${compose[@]}" logs --no-color app | grep -Fq "Received chain confirmation event id=e2e-event"; then
+  if "${compose[@]}" logs --no-color app | grep -Fq "Received chain transaction event id=e2e-event"; then
     exit 0
   fi
   sleep 2
