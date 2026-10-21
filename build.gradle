@@ -51,7 +51,6 @@ subprojects {
 	bootJar {
 		enabled = false
 	}
-
 	dependencies {
 		// Dependencies every module needs (like logging or testing tools)
 		testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
@@ -66,6 +65,7 @@ subprojects {
 		implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
 		implementation 'org.springframework.boot:spring-boot-starter-web'
 		implementation 'io.netty:netty-handler:4.2.17.Final'
+		implementation("at.yawk.lz4:lz4-java:1.12.0")
 		implementation 'org.springframework.boot:spring-boot-starter-validation'
 		implementation 'org.springframework.boot:spring-boot-starter-aspectj'
 		implementation 'org.springframework.boot:spring-boot-starter-security'
