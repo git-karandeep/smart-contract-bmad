@@ -1,6 +1,6 @@
 # Chain Settlement Platform
 
-> Blockchain-backed smart-contract orchestration using **Spring Boot 3, Camunda 8 (Zeebe), Kafka, Solidity and Web3j**, documented in **BMAD** style (Brief → PRD → Architecture → Stories → Dev/QA).
+> Blockchain-backed smart-contract orchestration using **Spring Boot 4, Camunda 8 (Zeebe), Kafka, Solidity and Web3j**, documented in **BMAD** style (Brief → PRD → Architecture → Stories → Dev/QA).
 
 | | |
 |---|---|
