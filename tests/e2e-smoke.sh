@@ -141,11 +141,11 @@ done
 "${compose[@]}" exec -T mongodb mongosh --quiet "mongodb://mongodb:27017/general-contracts?replicaSet=rs0" --eval \
   'if (!db.getCollectionNames().includes("processed_events")) quit(1)'
 
-printf '%s\n' 'e2e-event:{"eventId":"e2e-event","eventType":"ChainTxConfirmed","businessId":"e2e-business","occurredAt":"2026-10-07T00:00:00Z","chainId":31337,"txHash":null,"blockNumber":1,"schemaVersion":1,"payload":{}}' \
+printf '%s\n' 'e2e-event:{"eventId":"e2e-event","eventType":"ChainTxConfirmed","businessId":"e2e-business","occurredAt":"2026-10-07T00:00:00Z","chainId":31337,"txHash":"0x0000000000000000000000000000000000000000000000000000000000000001","blockNumber":1,"schemaVersion":1,"payload":{}}' \
   | "${compose[@]}" exec -T kafka kafka-console-producer --bootstrap-server kafka:29092 --topic chain.tx.confirmed --property parse.key=true --property key.separator=:
 
 for attempt in $(seq 1 30); do
-  if "${compose[@]}" logs --no-color app | grep -Fq "Received chain confirmation event id=e2e-event"; then
+  if "${compose[@]}" logs --no-color app | grep -Fq "Received chain transaction event id=e2e-event type=ChainTxConfirmed"; then
     exit 0
   fi
   sleep 2
