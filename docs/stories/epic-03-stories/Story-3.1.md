@@ -6,7 +6,7 @@ so that later transformations start from a validated, deterministic process.
 
 ## Acceptance Criteria
 
-- The generator accepts the existing `transfer-lifecycle.bpmn` model and produces a valid Camunda 8 BPMN model with the declared naming and process-ID conventions applied.
+- The generator accepts the existing `transfer-lifecycle-source.bpmn` model and produces a valid Camunda 8 BPMN model with the declared naming and process-ID conventions applied.
 - Analysis identifies the service tasks, gateways, message events, timers, subprocesses, and the KYC, AML, and sanctions capabilities selected for extraction.
 - Unsupported or ambiguous structures are reported for review and are never silently rewritten as reusable processes.
 - Invalid or unsupported BPMN input produces actionable validation errors and does not produce a success-shaped output.
@@ -27,4 +27,4 @@ so that later transformations start from a validated, deterministic process.
 - Epic — [Standardized BPMN Design and Reusable Workflow Generator](../../epics/epic-03-wallet-standardization.md)
 - Architecture — [Camunda conventions and process versioning](../../architecture.md), Sections 7.1 and 7.6
 - Architecture — [Process testing strategy](../../architecture/coding-standards.md)
-- Existing process — `modules/process-definitions/src/main/resources/processes/transfer-lifecycle.bpmn`
+- Existing process — `../../../modules/process-definitions/src/main/resources/processes/transfer-lifecycle-source.bpmn`

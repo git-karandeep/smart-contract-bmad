@@ -15,7 +15,7 @@ context:
   - 'docs/epics/epic-03-wallet-standardization.md'
   - 'docs/stories/epic-03-stories/'
   - 'docs/architecture.md'
-  - 'modules/process-definitions/src/main/resources/processes/transfer-lifecycle.bpmn'
+  - 'modules/process-definitions/src/main/resources/processes/transfer-lifecycle-source.bpmn'
 ---
 
 <frozen-after-approval reason="human-owned intent — do not modify unless human renegotiates">
@@ -51,7 +51,7 @@ context:
 
 ## Code Map
 
-- `modules/process-definitions/src/main/resources/processes/transfer-lifecycle.bpmn` — input process; three screening branches, message subscriptions, timers, join, and payment paths. Its `submissionUnknown` end currently has no status-lookup path.
+- `../../modules/process-definitions/src/main/resources/processes/transfer-lifecycle-source.bpmn` — input process; three screening branches, message subscriptions, timers, join, and payment paths. Its `submissionUnknown` end currently has no status-lookup path.
 - `modules/process-definitions/src/main/java/` — no generator exists; module has only the JDK and JUnit dependencies.
 - `modules/process-definitions/src/test/java/ai/generalcontracts/startup/workflow/TransferLifecycleBpmnTest.java` — secure JAXP parsing and XPath shape assertions; use as the structural validation baseline.
 - `modules/process-workers/src/main/java/ai/generalcontracts/startup/workflow/TransferLifecycleJobHandlers.java` — persists screening and transfer states; retries are not implemented here. Submission uncertainty sets `TRANSACTION_UNKNOWN`; reconciliation requires a transaction hash and chain outcome.

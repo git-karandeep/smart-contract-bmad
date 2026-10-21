@@ -38,7 +38,7 @@ context:
 
 ## Code Map
 
-- `modules/process-definitions/src/main/resources/processes/transfer-lifecycle.bpmn` — executable process: message start, validation, parallel KYC/AML/sanctions, event-based waits, timeout persistence, aggregate, pre-execution gate, submission, transaction wait, reconciliation, terminal paths.
+- `../../modules/process-definitions/src/main/resources/processes/transfer-lifecycle-source.bpmn` — executable process: message start, validation, parallel KYC/AML/sanctions, event-based waits, timeout persistence, aggregate, pre-execution gate, submission, transaction wait, reconciliation, terminal paths.
 - `modules/process-definitions/src/test/java/ai/generalcontracts/startup/workflow/TransferLifecycleBpmnTest.java` — XML assertions for process topology and fail-closed paths; extend to cover subscription correlation, safe variable scope, cancellation/error paths, and all joins.
 - `modules/process-workers/src/test/java/ai/generalcontracts/startup/workflow/TransferLifecycleWorkerCoverageTest.java` — ensures each service-task type has a registered worker and verifies screening joins/default gateways.
 - `modules/process-workers/src/main/java/ai/generalcontracts/startup/workflow/TransferLifecycleCamundaWorkers.java` — worker task types and instruction-ID input contract.

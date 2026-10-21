@@ -30,11 +30,16 @@
         </bpmn:extensionElements>
       </bpmn:multiInstanceLoopCharacteristics>
       <bpmn:startEvent id="kycSubjectWaitStart" name="Wait for subject result" />
-      <bpmn:eventBasedGateway id="kycSubjectWait" name="Await KYC result or timeout" />
+      <bpmn:eventBasedGateway id="kycSubjectWait" name="Await KYC result or timeout">
+        <bpmn:outgoing>Flow_1669ufr</bpmn:outgoing>
+        <bpmn:outgoing>Flow_141urs2</bpmn:outgoing>
+      </bpmn:eventBasedGateway>
       <bpmn:intermediateCatchEvent id="kycResult" name="KYC subject result">
+        <bpmn:incoming>Flow_1669ufr</bpmn:incoming>
         <bpmn:messageEventDefinition messageRef="kycResultMessage" />
       </bpmn:intermediateCatchEvent>
       <bpmn:intermediateCatchEvent id="kycTimeout" name="KYC subject timeout">
+        <bpmn:incoming>Flow_141urs2</bpmn:incoming>
         <bpmn:timerEventDefinition>
           <bpmn:timeDuration>PT15M</bpmn:timeDuration>
         </bpmn:timerEventDefinition>
@@ -50,22 +55,22 @@
       </bpmn:serviceTask>
       <bpmn:endEvent id="kycSubjectComplete" name="KYC subject completed" />
       <bpmn:sequenceFlow id="flowKycSubjectStart" sourceRef="kycSubjectWaitStart" targetRef="kycSubjectWait" />
-      <bpmn:sequenceFlow id="flowKycSubjectResult" sourceRef="kycSubjectWait" targetRef="kycResult" />
-      <bpmn:sequenceFlow id="flowKycSubjectTimeout" sourceRef="kycSubjectWait" targetRef="kycTimeout" />
       <bpmn:sequenceFlow id="flowKycSubjectResultComplete" sourceRef="kycResult" targetRef="kycSubjectComplete" />
       <bpmn:sequenceFlow id="flowKycSubjectPersistTimeout" sourceRef="kycTimeout" targetRef="kycTimeoutPersist" />
       <bpmn:sequenceFlow id="flowKycSubjectTimeoutComplete" sourceRef="kycTimeoutPersist" targetRef="kycSubjectComplete" />
+      <bpmn:sequenceFlow id="Flow_1669ufr" sourceRef="kycSubjectWait" targetRef="kycResult" />
+      <bpmn:sequenceFlow id="Flow_141urs2" sourceRef="kycSubjectWait" targetRef="kycTimeout" />
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="kycStartFlow" sourceRef="kycStart" targetRef="requestKyc" />
     <bpmn:sequenceFlow id="flowKycRequestGateway" sourceRef="requestKyc" targetRef="kycRequestGateway" />
     <bpmn:sequenceFlow id="flowKycRequestPublished" sourceRef="kycRequestGateway" targetRef="kycScreeningRequests">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">kycRequestReady = true and kycNotRequired != true</bpmn:conditionExpression>
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=kycRequestReady = true and kycNotRequired != true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="flowKycNotRequired" sourceRef="kycRequestGateway" targetRef="kycEnd">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">kycNotRequired = true</bpmn:conditionExpression>
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=kycNotRequired = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="flowKycPolicyHold" sourceRef="kycRequestGateway" targetRef="kycPolicyHold">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">kycRequestReady = false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=kycRequestReady = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="flowKycPolicyHoldJoin" sourceRef="kycPolicyHold" targetRef="kycEnd" />
     <bpmn:sequenceFlow id="flowKycRequestsJoin" sourceRef="kycScreeningRequests" targetRef="kycEnd" />
@@ -112,13 +117,13 @@
       <bpmndi:BPMNShape id="kycSubjectWait_di" bpmnElement="kycSubjectWait">
         <dc:Bounds x="705" y="285" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="689" y="335" width="83" height="27" />
+          <dc:Bounds x="764.5" y="296" width="83" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="kycResult_di" bpmnElement="kycResult">
         <dc:Bounds x="832" y="222" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="820" y="258" width="61" height="27" />
+          <dc:Bounds x="819" y="184.5" width="61" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="kycTimeout_di" bpmnElement="kycTimeout">
@@ -140,16 +145,6 @@
         <di:waypoint x="668" y="310" />
         <di:waypoint x="705" y="310" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycSubjectResult_di" bpmnElement="flowKycSubjectResult">
-        <di:waypoint x="730" y="285" />
-        <di:waypoint x="730" y="240" />
-        <di:waypoint x="832" y="240" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycSubjectTimeout_di" bpmnElement="flowKycSubjectTimeout">
-        <di:waypoint x="730" y="335" />
-        <di:waypoint x="730" y="380" />
-        <di:waypoint x="832" y="380" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowKycSubjectResultComplete_di" bpmnElement="flowKycSubjectResultComplete">
         <di:waypoint x="850" y="258" />
         <di:waypoint x="850" y="310" />
@@ -163,6 +158,16 @@
         <di:waypoint x="980" y="340" />
         <di:waypoint x="980" y="310" />
         <di:waypoint x="1152" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1669ufr_di" bpmnElement="Flow_1669ufr">
+        <di:waypoint x="730" y="285" />
+        <di:waypoint x="730" y="240" />
+        <di:waypoint x="832" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_141urs2_di" bpmnElement="Flow_141urs2">
+        <di:waypoint x="730" y="335" />
+        <di:waypoint x="730" y="380" />
+        <di:waypoint x="832" y="380" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="kycStartFlow_di" bpmnElement="kycStartFlow">
         <di:waypoint x="246" y="310" />

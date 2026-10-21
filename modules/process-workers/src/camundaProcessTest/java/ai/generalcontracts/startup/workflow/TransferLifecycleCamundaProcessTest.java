@@ -28,7 +28,7 @@ public class TransferLifecycleCamundaProcessTest {
     @BeforeEach
     void deployGeneratedProcesses() {
         client.newDeployResourceCommand()
-            .addResourceFromClasspath("generated-processes/transfer-lifecycle.bpmn")
+            .addResourceFromClasspath("generated-processes/transfer-lifecycle-source.bpmn")
             .addResourceFromClasspath("generated-processes/kyc-screening-process.bpmn")
             .addResourceFromClasspath("generated-processes/aml-screening-process.bpmn")
             .addResourceFromClasspath("generated-processes/sanctions-screening-process.bpmn")

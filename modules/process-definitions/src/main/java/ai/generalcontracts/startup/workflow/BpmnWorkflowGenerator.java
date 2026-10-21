@@ -134,7 +134,7 @@ public final class BpmnWorkflowGenerator {
             Document sourceDocument = parse(Files.readAllBytes(input));
             validateSource(sourceDocument);
             Map<String, byte[]> generated = new LinkedHashMap<>();
-            generated.put("transfer-lifecycle.bpmn", serialize(generateParent(sourceDocument)));
+            generated.put("transfer-lifecycle-source.bpmn", serialize(generateParent(sourceDocument)));
             for (ScreeningProcess screening : SCREENINGS) {
                 generated.put(screening.fileName(), serialize(generateScreeningProcess(sourceDocument, screening)));
             }
@@ -835,7 +835,7 @@ public final class BpmnWorkflowGenerator {
                 documents.put(entry.getKey(), parse(entry.getValue()));
             }
         }
-        Document parent = documents.get("transfer-lifecycle.bpmn");
+        Document parent = documents.get("transfer-lifecycle-source.bpmn");
         for (ScreeningProcess screening : SCREENINGS) {
             Element call = elementById(parent, screening.callId());
             require(call != null, "Generated parent is missing Call Activity " + screening.callId());
@@ -944,7 +944,7 @@ public final class BpmnWorkflowGenerator {
 
     private byte[] successReport(String inputName, Document source) {
         List<String> generatedNames = new ArrayList<>();
-        generatedNames.add("transfer-lifecycle.bpmn");
+        generatedNames.add("transfer-lifecycle-source.bpmn");
         SCREENINGS.forEach(screening -> generatedNames.add(screening.fileName()));
         StringBuilder json = new StringBuilder();
         json.append("{\n")

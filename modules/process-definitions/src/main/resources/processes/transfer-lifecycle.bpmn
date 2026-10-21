@@ -1,23 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="transferDefinitions" name="Token transfer workflows" targetNamespace="https://generalcontracts.ai/workflows" exporter="Camunda Modeler" exporterVersion="5.48.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="transferDefinitions" name="Token transfer workflows" targetNamespace="https://generalcontracts.ai/workflows" exporter="Camunda Modeler" exporterVersion="5.52.0">
   <bpmn:message id="transferInstructionMessage" name="TransferInstructionReceived">
     <bpmn:extensionElements>
       <zeebe:subscription correlationKey="=instructionId" />
-    </bpmn:extensionElements>
-  </bpmn:message>
-  <bpmn:message id="kycResultMessage" name="KycScreeningResult">
-    <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=kycScreeningRequestId" />
-    </bpmn:extensionElements>
-  </bpmn:message>
-  <bpmn:message id="amlResultMessage" name="AmlScreeningResult">
-    <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=amlCorrelationKey" />
-    </bpmn:extensionElements>
-  </bpmn:message>
-  <bpmn:message id="sanctionsResultMessage" name="SanctionsScreeningResult">
-    <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=sanctionsCorrelationKey" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmn:message id="transactionResultMessage" name="TransferTransactionResult">
@@ -37,76 +22,17 @@
     <bpmn:startEvent id="transferReceived" name="Transfer instruction received">
       <bpmn:messageEventDefinition messageRef="transferInstructionMessage" />
     </bpmn:startEvent>
-    <bpmn:serviceTask id="validateTransfer" name="Validate transfer">
+    <bpmn:callActivity id="kycScreeningCall" name="KYC screening">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="transfer-validate" retries="3" />
+        <zeebe:calledElement processId="kyc-screening-process" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=instructionId" target="instructionId" />
+          <zeebe:output source="=kycRequestReady" target="kycRequestReady" />
+          <zeebe:output source="=kycNotRequired" target="kycNotRequired" />
+          <zeebe:output source="=kycScreeningRequestIds" target="kycScreeningRequestIds" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
-    </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="validationGateway" name="Instruction valid?" default="flowInvalid" />
-    <bpmn:endEvent id="validationRejected" name="Validation failed" />
-    <bpmn:parallelGateway id="screeningFork" name="Request mandatory screenings" />
-    <bpmn:serviceTask id="requestKyc" name="Request KYC screening">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="screening-request-kyc" retries="3" />
-      </bpmn:extensionElements>
-    </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="kycRequestGateway" name="KYC request published?" default="flowKycPolicyHold" />
-    <bpmn:serviceTask id="kycPolicyHold" name="Persist missing KYC policy hold">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="screening-timeout-kyc" retries="3" />
-      </bpmn:extensionElements>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="requestAml" name="Request AML screening">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="screening-request-aml" retries="3" />
-      </bpmn:extensionElements>
-    </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="amlRequestGateway" name="AML request published?" default="flowAmlPolicyHold" />
-    <bpmn:eventBasedGateway id="amlWait" name="Await AML result or timeout" />
-    <bpmn:intermediateCatchEvent id="amlResult" name="AML result">
-      <bpmn:messageEventDefinition messageRef="amlResultMessage" />
-    </bpmn:intermediateCatchEvent>
-    <bpmn:intermediateCatchEvent id="amlTimeout" name="AML timeout">
-      <bpmn:timerEventDefinition>
-        <bpmn:timeDuration>PT15M</bpmn:timeDuration>
-      </bpmn:timerEventDefinition>
-    </bpmn:intermediateCatchEvent>
-    <bpmn:serviceTask id="amlTimeoutPersist" name="Persist AML timeout hold">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="screening-timeout-aml" retries="3" />
-      </bpmn:extensionElements>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="amlPolicyHold" name="Persist missing AML policy hold">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="screening-timeout-aml" retries="3" />
-      </bpmn:extensionElements>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="requestSanctions" name="Request sanctions screening">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="screening-request-sanctions" retries="3" />
-      </bpmn:extensionElements>
-    </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="sanctionsRequestGateway" name="Sanctions request published?" default="flowSanctionsPolicyHold" />
-    <bpmn:eventBasedGateway id="sanctionsWait" name="Await sanctions result or timeout" />
-    <bpmn:intermediateCatchEvent id="sanctionsResult" name="Sanctions result">
-      <bpmn:messageEventDefinition messageRef="sanctionsResultMessage" />
-    </bpmn:intermediateCatchEvent>
-    <bpmn:intermediateCatchEvent id="sanctionsTimeout" name="Sanctions timeout">
-      <bpmn:timerEventDefinition>
-        <bpmn:timeDuration>PT15M</bpmn:timeDuration>
-      </bpmn:timerEventDefinition>
-    </bpmn:intermediateCatchEvent>
-    <bpmn:serviceTask id="sanctionsTimeoutPersist" name="Persist sanctions timeout hold">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="screening-timeout-sanctions" retries="3" />
-      </bpmn:extensionElements>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="sanctionsPolicyHold" name="Persist missing sanctions policy hold">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="screening-timeout-sanctions" retries="3" />
-      </bpmn:extensionElements>
-    </bpmn:serviceTask>
-    <bpmn:parallelGateway id="screeningJoin" name="All mandatory results received" />
+    </bpmn:callActivity>
     <bpmn:serviceTask id="aggregateCompliance" name="Aggregate compliance decisions">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="compliance-aggregate" retries="3" />
@@ -146,6 +72,22 @@
         </zeebe:ioMapping>
       </bpmn:extensionElements>
     </bpmn:endEvent>
+    <bpmn:serviceTask id="recoverUnknownSubmission" name="Look up journaled payment submission">
+      <bpmn:documentation>Lookup the existing instruction-keyed submission journal only. Reconcile through the existing transaction-result path only when a matching known hash exists. Without a journaled hash, keep the transfer operationally held. Never submit again.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="transfer-recover-unknown" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=instructionId" target="instructionId" />
+          <zeebe:output source="=recoveryHasTransactionHash" target="recoveryHasTransactionHash" />
+          <zeebe:output source="=recoveryRequiresInvestigation" target="recoveryRequiresInvestigation" />
+          <zeebe:output source="=recoveryReasonCode" target="recoveryReasonCode" />
+          <zeebe:output source="=transactionHash" target="transactionHash" />
+          <zeebe:output source="=transactionOutcome" target="transactionOutcome" />
+          <zeebe:output source="=finalized" target="finalized" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="unknownRecoveryGateway" name="Journaled transaction hash found?" default="flowUnknownRecoveryHold" />
     <bpmn:subProcess id="transferCancellation" name="Handle pre-submission cancellation" triggeredByEvent="true">
       <bpmn:startEvent id="cancellationRequested" name="Cancellation requested" isInterrupting="false">
         <bpmn:messageEventDefinition messageRef="transferCancellationMessage" />
@@ -170,89 +112,10 @@
       </bpmn:sequenceFlow>
       <bpmn:sequenceFlow id="flowCancellationRejected" sourceRef="cancellationGateway" targetRef="cancellationHandled" />
     </bpmn:subProcess>
-    <bpmn:subProcess id="kycScreeningRequests" name="Await every required KYC subject">
-      <bpmn:multiInstanceLoopCharacteristics>
-        <bpmn:extensionElements>
-          <zeebe:loopCharacteristics inputCollection="=kycScreeningRequestIds" inputElement="kycScreeningRequestId" />
-        </bpmn:extensionElements>
-      </bpmn:multiInstanceLoopCharacteristics>
-      <bpmn:startEvent id="kycSubjectWaitStart" name="Wait for subject result" />
-      <bpmn:eventBasedGateway id="kycSubjectWait" name="Await KYC result or timeout" />
-      <bpmn:intermediateCatchEvent id="kycResult" name="KYC subject result">
-        <bpmn:messageEventDefinition messageRef="kycResultMessage" />
-      </bpmn:intermediateCatchEvent>
-      <bpmn:intermediateCatchEvent id="kycTimeout" name="KYC subject timeout">
-        <bpmn:timerEventDefinition>
-          <bpmn:timeDuration>PT15M</bpmn:timeDuration>
-        </bpmn:timerEventDefinition>
-      </bpmn:intermediateCatchEvent>
-      <bpmn:serviceTask id="kycTimeoutPersist" name="Persist KYC subject timeout hold">
-        <bpmn:extensionElements>
-          <zeebe:taskDefinition type="screening-timeout-kyc" retries="3" />
-          <zeebe:ioMapping>
-            <zeebe:input source="=instructionId" target="instructionId" />
-            <zeebe:input source="=kycScreeningRequestId" target="screeningRequestId" />
-          </zeebe:ioMapping>
-        </bpmn:extensionElements>
-      </bpmn:serviceTask>
-      <bpmn:endEvent id="kycSubjectComplete" name="KYC subject completed" />
-      <bpmn:sequenceFlow id="flowKycSubjectStart" sourceRef="kycSubjectWaitStart" targetRef="kycSubjectWait" />
-      <bpmn:sequenceFlow id="flowKycSubjectResult" sourceRef="kycSubjectWait" targetRef="kycResult" />
-      <bpmn:sequenceFlow id="flowKycSubjectTimeout" sourceRef="kycSubjectWait" targetRef="kycTimeout" />
-      <bpmn:sequenceFlow id="flowKycSubjectResultComplete" sourceRef="kycResult" targetRef="kycSubjectComplete" />
-      <bpmn:sequenceFlow id="flowKycSubjectPersistTimeout" sourceRef="kycTimeout" targetRef="kycTimeoutPersist" />
-      <bpmn:sequenceFlow id="flowKycSubjectTimeoutComplete" sourceRef="kycTimeoutPersist" targetRef="kycSubjectComplete" />
-    </bpmn:subProcess>
     <bpmn:sequenceFlow id="flowStartValidate" sourceRef="transferReceived" targetRef="validateTransfer" />
-    <bpmn:sequenceFlow id="flowValidateGateway" sourceRef="validateTransfer" targetRef="validationGateway" />
-    <bpmn:sequenceFlow id="flowInvalid" sourceRef="validationGateway" targetRef="validationRejected">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=validationPassed = false</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowValid" sourceRef="validationGateway" targetRef="screeningFork">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=validationPassed = true</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowKycRequest" sourceRef="screeningFork" targetRef="requestKyc" />
-    <bpmn:sequenceFlow id="flowAmlRequest" sourceRef="screeningFork" targetRef="requestAml" />
-    <bpmn:sequenceFlow id="flowSanctionsRequest" sourceRef="screeningFork" targetRef="requestSanctions" />
-    <bpmn:sequenceFlow id="flowKycRequestGateway" sourceRef="requestKyc" targetRef="kycRequestGateway" />
-    <bpmn:sequenceFlow id="flowKycRequestPublished" sourceRef="kycRequestGateway" targetRef="kycScreeningRequests">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=kycRequestReady = true and kycNotRequired != true</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowKycNotRequired" sourceRef="kycRequestGateway" targetRef="screeningJoin">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=kycNotRequired = true</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowKycPolicyHold" sourceRef="kycRequestGateway" targetRef="kycPolicyHold">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=kycRequestReady = false</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowKycPolicyHoldJoin" sourceRef="kycPolicyHold" targetRef="screeningJoin" />
-    <bpmn:sequenceFlow id="flowAmlRequestGateway" sourceRef="requestAml" targetRef="amlRequestGateway" />
-    <bpmn:sequenceFlow id="flowAmlRequestPublished" sourceRef="amlRequestGateway" targetRef="amlWait">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=amlRequestReady = true</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowAmlPolicyHold" sourceRef="amlRequestGateway" targetRef="amlPolicyHold">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=amlRequestReady = false</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowAmlResult" sourceRef="amlWait" targetRef="amlResult" />
-    <bpmn:sequenceFlow id="flowAmlTimeout" sourceRef="amlWait" targetRef="amlTimeout" />
-    <bpmn:sequenceFlow id="flowAmlResultJoin" sourceRef="amlResult" targetRef="screeningJoin" />
-    <bpmn:sequenceFlow id="flowAmlTimeoutPersist" sourceRef="amlTimeout" targetRef="amlTimeoutPersist" />
-    <bpmn:sequenceFlow id="flowAmlTimeoutJoin" sourceRef="amlTimeoutPersist" targetRef="screeningJoin" />
-    <bpmn:sequenceFlow id="flowAmlPolicyHoldJoin" sourceRef="amlPolicyHold" targetRef="screeningJoin" />
-    <bpmn:sequenceFlow id="flowSanctionsRequestGateway" sourceRef="requestSanctions" targetRef="sanctionsRequestGateway" />
-    <bpmn:sequenceFlow id="flowSanctionsRequestPublished" sourceRef="sanctionsRequestGateway" targetRef="sanctionsWait">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=sanctionsRequestReady = true</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowSanctionsPolicyHold" sourceRef="sanctionsRequestGateway" targetRef="sanctionsPolicyHold">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=sanctionsRequestReady = false</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowSanctionsResult" sourceRef="sanctionsWait" targetRef="sanctionsResult" />
-    <bpmn:sequenceFlow id="flowSanctionsTimeout" sourceRef="sanctionsWait" targetRef="sanctionsTimeout" />
-    <bpmn:sequenceFlow id="flowSanctionsResultJoin" sourceRef="sanctionsResult" targetRef="screeningJoin" />
-    <bpmn:sequenceFlow id="flowSanctionsTimeoutPersist" sourceRef="sanctionsTimeout" targetRef="sanctionsTimeoutPersist" />
-    <bpmn:sequenceFlow id="flowSanctionsTimeoutJoin" sourceRef="sanctionsTimeoutPersist" targetRef="screeningJoin" />
-    <bpmn:sequenceFlow id="flowSanctionsPolicyHoldJoin" sourceRef="sanctionsPolicyHold" targetRef="screeningJoin" />
-    <bpmn:sequenceFlow id="flowKycRequestsJoin" sourceRef="kycScreeningRequests" targetRef="screeningJoin" />
+    <bpmn:sequenceFlow id="flowKycRequestsJoin" sourceRef="kycScreeningCall" targetRef="screeningJoin" />
     <bpmn:sequenceFlow id="flowJoinAggregate" sourceRef="screeningJoin" targetRef="aggregateCompliance" />
+    <bpmn:sequenceFlow id="flowKycRequest" sourceRef="screeningFork" targetRef="kycScreeningCall" />
     <bpmn:sequenceFlow id="flowAggregateGateway" sourceRef="aggregateCompliance" targetRef="complianceGateway" />
     <bpmn:sequenceFlow id="flowComplianceReject" sourceRef="complianceGateway" targetRef="complianceRejected">
       <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=complianceOutcome = "REJECTED" or complianceOutcome = "HOLD" or complianceOutcome = "RESTRICTED"</bpmn:conditionExpression>
@@ -274,11 +137,15 @@
     <bpmn:sequenceFlow id="flowSubmissionAccepted" sourceRef="submissionGateway" targetRef="transactionResult">
       <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=submissionOutcome = "SUBMITTED"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowSubmissionUnknown" sourceRef="submissionGateway" targetRef="submissionUnknown">
+    <bpmn:sequenceFlow id="flowSubmissionUnknown" sourceRef="submissionGateway" targetRef="recoverUnknownSubmission">
       <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=submissionOutcome != "SUBMITTED"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowUnknownRecoveryHold" sourceRef="unknownRecoveryGateway" targetRef="submissionUnknown" />
     <bpmn:sequenceFlow id="flowReconciliationPending" sourceRef="reconciliationGateway" targetRef="transactionResult">
       <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=reconciliationPending = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowUnknownRecoveryHash" sourceRef="unknownRecoveryGateway" targetRef="transactionResult">
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=recoveryHasTransactionHash = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="flowResultReconcile" sourceRef="transactionResult" targetRef="reconcileTransfer" />
     <bpmn:sequenceFlow id="flowReconcileGateway" sourceRef="reconcileTransfer" targetRef="reconciliationGateway" />
@@ -288,520 +155,362 @@
     <bpmn:sequenceFlow id="flowReconciliationMatch" sourceRef="reconciliationGateway" targetRef="transferCompleted">
       <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=reconciliationMatched = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowUnknownRecoveryResult" sourceRef="recoverUnknownSubmission" targetRef="unknownRecoveryGateway" />
+    <bpmn:serviceTask id="validateTransfer" name="Validate transfer">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="transfer-validate" retries="3" />
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="validationGateway" name="Instruction valid?" default="flowInvalid" />
+    <bpmn:endEvent id="validationRejected" name="Validation failed" />
+    <bpmn:callActivity id="sanctionsScreeningCall" name="SANCTIONS screening">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="sanctions-screening-process" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=instructionId" target="instructionId" />
+          <zeebe:input source="=sanctionsCorrelationKey" target="sanctionsCorrelationKey" />
+          <zeebe:output source="=sanctionsRequestReady" target="sanctionsRequestReady" />
+          <zeebe:output source="=sanctionsTimeoutPersisted" target="sanctionsTimeoutPersisted" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:parallelGateway id="screeningJoin" name="All mandatory results received" />
+    <bpmn:parallelGateway id="screeningFork" name="Request mandatory screenings" />
+    <bpmn:callActivity id="amlScreeningCall" name="AML screening">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="aml-screening-process" propagateAllChildVariables="false" propagateAllParentVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=instructionId" target="instructionId" />
+          <zeebe:input source="=amlCorrelationKey" target="amlCorrelationKey" />
+          <zeebe:output source="=amlRequestReady" target="amlRequestReady" />
+          <zeebe:output source="=amlTimeoutPersisted" target="amlTimeoutPersisted" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="flowValidateGateway" sourceRef="validateTransfer" targetRef="validationGateway" />
+    <bpmn:sequenceFlow id="flowInvalid" sourceRef="validationGateway" targetRef="validationRejected">
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=validationPassed = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowValid" sourceRef="validationGateway" targetRef="screeningFork">
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=validationPassed = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flowSanctionsRequest" sourceRef="screeningFork" targetRef="sanctionsScreeningCall" />
+    <bpmn:sequenceFlow id="flowSanctionsResultJoin" sourceRef="sanctionsScreeningCall" targetRef="screeningJoin" />
+    <bpmn:sequenceFlow id="flowAmlResultJoin" sourceRef="amlScreeningCall" targetRef="screeningJoin" />
+    <bpmn:sequenceFlow id="flowAmlRequest" sourceRef="screeningFork" targetRef="amlScreeningCall" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_transfer-lifecycle">
     <bpmndi:BPMNPlane id="BPMNPlane_transfer-lifecycle" bpmnElement="Collaboration_1w3t2zw">
       <bpmndi:BPMNShape id="Participant_1t8twvl_di" bpmnElement="Participant_1t8twvl" isHorizontal="true">
-        <dc:Bounds x="160" y="80" width="3140" height="1250" />
+        <dc:Bounds x="160" y="80" width="2300" height="1010" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="transferReceived_di" bpmnElement="transferReceived">
-        <dc:Bounds x="212" y="492" width="36" height="36" />
+        <dc:Bounds x="212" y="352" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="183" y="532" width="94" height="27" />
+          <dc:Bounds x="205" y="392" width="51" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="validateTransfer_di" bpmnElement="validateTransfer">
-        <dc:Bounds x="330" y="470" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="validationGateway_di" bpmnElement="validationGateway" isMarkerVisible="true">
-        <dc:Bounds x="505" y="485" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="489" y="539" width="83" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="validationRejected_di" bpmnElement="validationRejected">
-        <dc:Bounds x="512" y="352" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="492" y="392" width="77" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="screeningFork_di" bpmnElement="screeningFork">
-        <dc:Bounds x="635" y="485" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="612" y="539" width="96" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="requestKyc_di" bpmnElement="requestKyc">
-        <dc:Bounds x="730" y="270" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="kycRequestGateway_di" bpmnElement="kycRequestGateway" isMarkerVisible="true">
-        <dc:Bounds x="905" y="285" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="899" y="339" width="63" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="kycPolicyHold_di" bpmnElement="kycPolicyHold">
-        <dc:Bounds x="880" y="100" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="requestAml_di" bpmnElement="requestAml">
-        <dc:Bounds x="730" y="570" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="amlRequestGateway_di" bpmnElement="amlRequestGateway" isMarkerVisible="true">
-        <dc:Bounds x="905" y="585" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="899" y="639" width="63" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="amlWait_di" bpmnElement="amlWait">
-        <dc:Bounds x="1055" y="585" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1032" y="639" width="96" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="amlResult_di" bpmnElement="amlResult">
-        <dc:Bounds x="1192" y="542" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1184" y="582" width="53" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="amlTimeout_di" bpmnElement="amlTimeout">
-        <dc:Bounds x="1192" y="642" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1179" y="682" width="62" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="amlTimeoutPersist_di" bpmnElement="amlTimeoutPersist">
-        <dc:Bounds x="1290" y="620" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="amlPolicyHold_di" bpmnElement="amlPolicyHold">
-        <dc:Bounds x="880" y="690" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="requestSanctions_di" bpmnElement="requestSanctions">
-        <dc:Bounds x="730" y="810" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="sanctionsRequestGateway_di" bpmnElement="sanctionsRequestGateway" isMarkerVisible="true">
-        <dc:Bounds x="905" y="825" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="886" y="879" width="89" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="sanctionsWait_di" bpmnElement="sanctionsWait">
-        <dc:Bounds x="1055" y="825" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1027" y="879" width="107" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="sanctionsResult_di" bpmnElement="sanctionsResult">
-        <dc:Bounds x="1192" y="782" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1171" y="822" width="79" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="sanctionsTimeout_di" bpmnElement="sanctionsTimeout">
-        <dc:Bounds x="1192" y="882" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1166" y="922" width="88" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="sanctionsTimeoutPersist_di" bpmnElement="sanctionsTimeoutPersist">
-        <dc:Bounds x="1290" y="860" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="sanctionsPolicyHold_di" bpmnElement="sanctionsPolicyHold">
-        <dc:Bounds x="880" y="950" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="screeningJoin_di" bpmnElement="screeningJoin">
-        <dc:Bounds x="1805" y="585" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1779" y="639" width="103" height="27" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="kycScreeningCall_di" bpmnElement="kycScreeningCall">
+        <dc:Bounds x="730" y="130" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="aggregateCompliance_di" bpmnElement="aggregateCompliance">
-        <dc:Bounds x="1930" y="570" width="100" height="80" />
+        <dc:Bounds x="1034" y="430" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="complianceGateway_di" bpmnElement="complianceGateway" isMarkerVisible="true">
-        <dc:Bounds x="2095" y="585" width="50" height="50" />
+        <dc:Bounds x="1199" y="445" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2068" y="639" width="104" height="14" />
+          <dc:Bounds x="1172" y="499" width="104" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="complianceRejected_di" bpmnElement="complianceRejected">
-        <dc:Bounds x="2102" y="452" width="36" height="36" />
+        <dc:Bounds x="1206" y="312" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2070" y="492" width="101" height="27" />
+          <dc:Bounds x="1173" y="275" width="101" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="manualReview_di" bpmnElement="manualReview">
-        <dc:Bounds x="2102" y="732" width="36" height="36" />
+        <dc:Bounds x="1206" y="592" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2085" y="772" width="71" height="27" />
+          <dc:Bounds x="1189" y="632" width="71" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="revalidateTransfer_di" bpmnElement="revalidateTransfer">
-        <dc:Bounds x="2230" y="570" width="100" height="80" />
+        <dc:Bounds x="1334" y="430" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="executionGateway_di" bpmnElement="executionGateway" isMarkerVisible="true">
-        <dc:Bounds x="2395" y="585" width="50" height="50" />
+        <dc:Bounds x="1521" y="445" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2384" y="639" width="73" height="27" />
+          <dc:Bounds x="1510" y="499" width="73" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="executionHeld_di" bpmnElement="executionHeld">
-        <dc:Bounds x="2402" y="452" width="36" height="36" />
+        <dc:Bounds x="1528" y="312" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2384" y="492" width="73" height="14" />
+          <dc:Bounds x="1509" y="288" width="73" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="submitTransfer_di" bpmnElement="submitTransfer">
-        <dc:Bounds x="2510" y="570" width="100" height="80" />
+        <dc:Bounds x="1636" y="430" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="submissionGateway_di" bpmnElement="submissionGateway" isMarkerVisible="true">
-        <dc:Bounds x="2675" y="585" width="50" height="50" />
+        <dc:Bounds x="1801" y="445" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2662" y="639" width="77" height="27" />
+          <dc:Bounds x="1788" y="499" width="77" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="submissionUnknown_di" bpmnElement="submissionUnknown">
-        <dc:Bounds x="2682" y="452" width="36" height="36" />
+        <dc:Bounds x="1808" y="312" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2649" y="492" width="103" height="27" />
+          <dc:Bounds x="1775" y="352" width="103" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="transactionResult_di" bpmnElement="transactionResult">
-        <dc:Bounds x="2822" y="592" width="36" height="36" />
+        <dc:Bounds x="1948" y="452" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2798" y="632" width="84" height="27" />
+          <dc:Bounds x="1924" y="415" width="84" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="reconcileTransfer_di" bpmnElement="reconcileTransfer">
-        <dc:Bounds x="2930" y="570" width="100" height="80" />
+        <dc:Bounds x="2056" y="430" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="reconciliationGateway_di" bpmnElement="reconciliationGateway" isMarkerVisible="true">
-        <dc:Bounds x="3095" y="585" width="50" height="50" />
+        <dc:Bounds x="2221" y="445" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3086" y="639" width="69" height="27" />
+          <dc:Bounds x="2211" y="408" width="69" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="reconciliationHeld_di" bpmnElement="reconciliationHeld">
-        <dc:Bounds x="3102" y="452" width="36" height="36" />
+        <dc:Bounds x="2228" y="312" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3086" y="492" width="69" height="27" />
+          <dc:Bounds x="2211" y="275" width="69" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="transferCompleted_di" bpmnElement="transferCompleted">
-        <dc:Bounds x="3242" y="592" width="36" height="36" />
+        <dc:Bounds x="2368" y="452" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="3213" y="632" width="95" height="14" />
+          <dc:Bounds x="2339" y="492" width="95" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="recoverUnknownSubmission_di" bpmnElement="recoverUnknownSubmission">
+        <dc:Bounds x="1796" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="unknownRecoveryGateway_di" bpmnElement="unknownRecoveryGateway" isMarkerVisible="true">
+        <dc:Bounds x="1961" y="215" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1946" y="265" width="81" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="validateTransfer_di" bpmnElement="validateTransfer">
+        <dc:Bounds x="330" y="350" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="validationGateway_di" bpmnElement="validationGateway" isMarkerVisible="true">
+        <dc:Bounds x="505" y="365" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="565" y="383" width="83" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="validationRejected_di" bpmnElement="validationRejected">
+        <dc:Bounds x="512" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="492" y="272" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sanctionsScreeningCall_di" bpmnElement="sanctionsScreeningCall">
+        <dc:Bounds x="730" y="690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="screeningJoin_di" bpmnElement="screeningJoin">
+        <dc:Bounds x="909" y="445" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="941" y="436" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="screeningFork_di" bpmnElement="screeningFork">
+        <dc:Bounds x="635" y="445" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="558" y="434" width="96" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amlScreeningCall_di" bpmnElement="amlScreeningCall">
+        <dc:Bounds x="740" y="430" width="100" height="80" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="transferCancellation_di" bpmnElement="transferCancellation" isExpanded="true">
-        <dc:Bounds x="230" y="1050" width="560" height="260" />
+        <dc:Bounds x="380" y="780" width="560" height="260" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="cancellationRequested_di" bpmnElement="cancellationRequested">
-        <dc:Bounds x="262" y="1162" width="36" height="36" />
+        <dc:Bounds x="412" y="892" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="250" y="1202" width="61" height="27" />
+          <dc:Bounds x="400" y="932" width="61" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="cancelTransfer_di" bpmnElement="cancelTransfer">
-        <dc:Bounds x="350" y="1140" width="100" height="80" />
+        <dc:Bounds x="500" y="870" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="cancellationGateway_di" bpmnElement="cancellationGateway" isMarkerVisible="true">
-        <dc:Bounds x="505" y="1155" width="50" height="50" />
+        <dc:Bounds x="655" y="885" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="500" y="1209" width="61" height="27" />
+          <dc:Bounds x="650" y="939" width="61" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="cancellationHandled_di" bpmnElement="cancellationHandled">
-        <dc:Bounds x="642" y="1232" width="36" height="36" />
+        <dc:Bounds x="792" y="962" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="609" y="1272" width="103" height="14" />
+          <dc:Bounds x="759" y="1002" width="103" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="cancellationTerminated_di" bpmnElement="cancellationTerminated">
-        <dc:Bounds x="642" y="1092" width="36" height="36" />
+        <dc:Bounds x="792" y="822" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="623" y="1132" width="75" height="27" />
+          <dc:Bounds x="773" y="862" width="75" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="flowCancellationRequested_di" bpmnElement="flowCancellationRequested">
-        <di:waypoint x="298" y="1180" />
-        <di:waypoint x="350" y="1180" />
+        <di:waypoint x="448" y="910" />
+        <di:waypoint x="500" y="910" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowCancelResult_di" bpmnElement="flowCancelResult">
-        <di:waypoint x="450" y="1180" />
-        <di:waypoint x="505" y="1180" />
+        <di:waypoint x="600" y="910" />
+        <di:waypoint x="655" y="910" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowCancellationAccepted_di" bpmnElement="flowCancellationAccepted">
-        <di:waypoint x="530" y="1155" />
-        <di:waypoint x="530" y="1110" />
-        <di:waypoint x="642" y="1110" />
+        <di:waypoint x="680" y="885" />
+        <di:waypoint x="680" y="840" />
+        <di:waypoint x="792" y="840" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowCancellationRejected_di" bpmnElement="flowCancellationRejected">
-        <di:waypoint x="530" y="1205" />
-        <di:waypoint x="530" y="1250" />
-        <di:waypoint x="642" y="1250" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="kycScreeningRequests_di" bpmnElement="kycScreeningRequests" isExpanded="true">
-        <dc:Bounds x="1040" y="190" width="640" height="240" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="kycSubjectWaitStart_di" bpmnElement="kycSubjectWaitStart">
-        <dc:Bounds x="1062" y="292" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1027" y="332" width="106" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="kycSubjectWait_di" bpmnElement="kycSubjectWait">
-        <dc:Bounds x="1135" y="285" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1112" y="339" width="96" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="kycResult_di" bpmnElement="kycResult">
-        <dc:Bounds x="1262" y="222" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1235" y="262" width="91" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="kycTimeout_di" bpmnElement="kycTimeout">
-        <dc:Bounds x="1262" y="362" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1230" y="402" width="100" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="kycTimeoutPersist_di" bpmnElement="kycTimeoutPersist">
-        <dc:Bounds x="1360" y="340" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="kycSubjectComplete_di" bpmnElement="kycSubjectComplete">
-        <dc:Bounds x="1582" y="292" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1570" y="332" width="61" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="flowKycSubjectStart_di" bpmnElement="flowKycSubjectStart">
-        <di:waypoint x="1098" y="310" />
-        <di:waypoint x="1135" y="310" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycSubjectResult_di" bpmnElement="flowKycSubjectResult">
-        <di:waypoint x="1160" y="285" />
-        <di:waypoint x="1160" y="240" />
-        <di:waypoint x="1262" y="240" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycSubjectTimeout_di" bpmnElement="flowKycSubjectTimeout">
-        <di:waypoint x="1160" y="335" />
-        <di:waypoint x="1160" y="380" />
-        <di:waypoint x="1262" y="380" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycSubjectResultComplete_di" bpmnElement="flowKycSubjectResultComplete">
-        <di:waypoint x="1280" y="258" />
-        <di:waypoint x="1280" y="310" />
-        <di:waypoint x="1582" y="310" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycSubjectPersistTimeout_di" bpmnElement="flowKycSubjectPersistTimeout">
-        <di:waypoint x="1298" y="380" />
-        <di:waypoint x="1360" y="380" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycSubjectTimeoutComplete_di" bpmnElement="flowKycSubjectTimeoutComplete">
-        <di:waypoint x="1410" y="340" />
-        <di:waypoint x="1410" y="310" />
-        <di:waypoint x="1582" y="310" />
+        <di:waypoint x="680" y="935" />
+        <di:waypoint x="680" y="980" />
+        <di:waypoint x="792" y="980" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowStartValidate_di" bpmnElement="flowStartValidate">
-        <di:waypoint x="248" y="510" />
-        <di:waypoint x="330" y="510" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowValidateGateway_di" bpmnElement="flowValidateGateway">
-        <di:waypoint x="430" y="510" />
-        <di:waypoint x="505" y="510" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowInvalid_di" bpmnElement="flowInvalid">
-        <di:waypoint x="530" y="485" />
-        <di:waypoint x="530" y="388" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowValid_di" bpmnElement="flowValid">
-        <di:waypoint x="555" y="510" />
-        <di:waypoint x="635" y="510" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycRequest_di" bpmnElement="flowKycRequest">
-        <di:waypoint x="660" y="485" />
-        <di:waypoint x="660" y="310" />
-        <di:waypoint x="730" y="310" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowAmlRequest_di" bpmnElement="flowAmlRequest">
-        <di:waypoint x="660" y="535" />
-        <di:waypoint x="660" y="610" />
-        <di:waypoint x="730" y="610" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowSanctionsRequest_di" bpmnElement="flowSanctionsRequest">
-        <di:waypoint x="660" y="535" />
-        <di:waypoint x="660" y="850" />
-        <di:waypoint x="730" y="850" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycRequestGateway_di" bpmnElement="flowKycRequestGateway">
-        <di:waypoint x="830" y="310" />
-        <di:waypoint x="905" y="310" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycRequestPublished_di" bpmnElement="flowKycRequestPublished">
-        <di:waypoint x="955" y="310" />
-        <di:waypoint x="1040" y="310" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycNotRequired_di" bpmnElement="flowKycNotRequired">
-        <di:waypoint x="930" y="335" />
-        <di:waypoint x="930" y="460" />
-        <di:waypoint x="1830" y="460" />
-        <di:waypoint x="1830" y="585" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycPolicyHold_di" bpmnElement="flowKycPolicyHold">
-        <di:waypoint x="930" y="285" />
-        <di:waypoint x="930" y="180" />
+        <di:waypoint x="248" y="370" />
+        <di:waypoint x="289" y="370" />
+        <di:waypoint x="289" y="390" />
+        <di:waypoint x="330" y="390" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowKycRequestsJoin_di" bpmnElement="flowKycRequestsJoin">
-        <di:waypoint x="1680" y="310" />
-        <di:waypoint x="1830" y="310" />
-        <di:waypoint x="1830" y="585" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowKycPolicyHoldJoin_di" bpmnElement="flowKycPolicyHoldJoin">
-        <di:waypoint x="980" y="140" />
-        <di:waypoint x="1830" y="140" />
-        <di:waypoint x="1830" y="585" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowAmlRequestGateway_di" bpmnElement="flowAmlRequestGateway">
-        <di:waypoint x="830" y="610" />
-        <di:waypoint x="905" y="610" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowAmlRequestPublished_di" bpmnElement="flowAmlRequestPublished">
-        <di:waypoint x="955" y="610" />
-        <di:waypoint x="1055" y="610" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowAmlPolicyHold_di" bpmnElement="flowAmlPolicyHold">
-        <di:waypoint x="930" y="635" />
-        <di:waypoint x="930" y="690" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowAmlResult_di" bpmnElement="flowAmlResult">
-        <di:waypoint x="1080" y="585" />
-        <di:waypoint x="1080" y="560" />
-        <di:waypoint x="1192" y="560" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowAmlTimeout_di" bpmnElement="flowAmlTimeout">
-        <di:waypoint x="1080" y="635" />
-        <di:waypoint x="1080" y="660" />
-        <di:waypoint x="1192" y="660" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowAmlResultJoin_di" bpmnElement="flowAmlResultJoin">
-        <di:waypoint x="1228" y="560" />
-        <di:waypoint x="1830" y="560" />
-        <di:waypoint x="1830" y="585" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowAmlTimeoutPersist_di" bpmnElement="flowAmlTimeoutPersist">
-        <di:waypoint x="1228" y="660" />
-        <di:waypoint x="1290" y="660" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowAmlTimeoutJoin_di" bpmnElement="flowAmlTimeoutJoin">
-        <di:waypoint x="1390" y="660" />
-        <di:waypoint x="1830" y="660" />
-        <di:waypoint x="1830" y="635" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowAmlPolicyHoldJoin_di" bpmnElement="flowAmlPolicyHoldJoin">
-        <di:waypoint x="980" y="730" />
-        <di:waypoint x="1830" y="730" />
-        <di:waypoint x="1830" y="635" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowSanctionsRequestGateway_di" bpmnElement="flowSanctionsRequestGateway">
-        <di:waypoint x="830" y="850" />
-        <di:waypoint x="905" y="850" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowSanctionsRequestPublished_di" bpmnElement="flowSanctionsRequestPublished">
-        <di:waypoint x="955" y="850" />
-        <di:waypoint x="1055" y="850" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowSanctionsPolicyHold_di" bpmnElement="flowSanctionsPolicyHold">
-        <di:waypoint x="930" y="875" />
-        <di:waypoint x="930" y="950" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowSanctionsResult_di" bpmnElement="flowSanctionsResult">
-        <di:waypoint x="1080" y="825" />
-        <di:waypoint x="1080" y="800" />
-        <di:waypoint x="1192" y="800" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowSanctionsTimeout_di" bpmnElement="flowSanctionsTimeout">
-        <di:waypoint x="1080" y="875" />
-        <di:waypoint x="1080" y="900" />
-        <di:waypoint x="1192" y="900" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowSanctionsResultJoin_di" bpmnElement="flowSanctionsResultJoin">
-        <di:waypoint x="1228" y="800" />
-        <di:waypoint x="1830" y="800" />
-        <di:waypoint x="1830" y="635" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowSanctionsTimeoutPersist_di" bpmnElement="flowSanctionsTimeoutPersist">
-        <di:waypoint x="1228" y="900" />
-        <di:waypoint x="1290" y="900" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowSanctionsTimeoutJoin_di" bpmnElement="flowSanctionsTimeoutJoin">
-        <di:waypoint x="1390" y="900" />
-        <di:waypoint x="1830" y="900" />
-        <di:waypoint x="1830" y="635" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowSanctionsPolicyHoldJoin_di" bpmnElement="flowSanctionsPolicyHoldJoin">
-        <di:waypoint x="980" y="990" />
-        <di:waypoint x="1830" y="990" />
-        <di:waypoint x="1830" y="635" />
+        <di:waypoint x="830" y="170" />
+        <di:waypoint x="934" y="170" />
+        <di:waypoint x="934" y="445" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowJoinAggregate_di" bpmnElement="flowJoinAggregate">
-        <di:waypoint x="1855" y="610" />
-        <di:waypoint x="1930" y="610" />
+        <di:waypoint x="959" y="470" />
+        <di:waypoint x="1034" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowKycRequest_di" bpmnElement="flowKycRequest">
+        <di:waypoint x="660" y="445" />
+        <di:waypoint x="660" y="170" />
+        <di:waypoint x="730" y="170" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowAggregateGateway_di" bpmnElement="flowAggregateGateway">
-        <di:waypoint x="2030" y="610" />
-        <di:waypoint x="2095" y="610" />
+        <di:waypoint x="1134" y="470" />
+        <di:waypoint x="1199" y="470" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowComplianceReject_di" bpmnElement="flowComplianceReject">
-        <di:waypoint x="2120" y="585" />
-        <di:waypoint x="2120" y="488" />
+        <di:waypoint x="1224" y="445" />
+        <di:waypoint x="1224" y="348" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowComplianceReview_di" bpmnElement="flowComplianceReview">
-        <di:waypoint x="2120" y="635" />
-        <di:waypoint x="2120" y="732" />
+        <di:waypoint x="1224" y="495" />
+        <di:waypoint x="1224" y="592" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowComplianceApproved_di" bpmnElement="flowComplianceApproved">
-        <di:waypoint x="2145" y="610" />
-        <di:waypoint x="2230" y="610" />
+        <di:waypoint x="1249" y="470" />
+        <di:waypoint x="1334" y="470" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowRevalidateGateway_di" bpmnElement="flowRevalidateGateway">
-        <di:waypoint x="2330" y="610" />
-        <di:waypoint x="2395" y="610" />
+        <di:waypoint x="1434" y="470" />
+        <di:waypoint x="1521" y="470" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowExecutionHeld_di" bpmnElement="flowExecutionHeld">
-        <di:waypoint x="2420" y="585" />
-        <di:waypoint x="2420" y="488" />
+        <di:waypoint x="1546" y="445" />
+        <di:waypoint x="1546" y="348" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowExecutionAllowed_di" bpmnElement="flowExecutionAllowed">
-        <di:waypoint x="2445" y="610" />
-        <di:waypoint x="2510" y="610" />
+        <di:waypoint x="1571" y="470" />
+        <di:waypoint x="1636" y="470" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowSubmitResult_di" bpmnElement="flowSubmitResult">
-        <di:waypoint x="2610" y="610" />
-        <di:waypoint x="2675" y="610" />
+        <di:waypoint x="1736" y="470" />
+        <di:waypoint x="1801" y="470" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowSubmissionAccepted_di" bpmnElement="flowSubmissionAccepted">
-        <di:waypoint x="2725" y="610" />
-        <di:waypoint x="2822" y="610" />
+        <di:waypoint x="1851" y="470" />
+        <di:waypoint x="1948" y="470" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowSubmissionUnknown_di" bpmnElement="flowSubmissionUnknown">
-        <di:waypoint x="2700" y="585" />
-        <di:waypoint x="2700" y="488" />
+        <di:waypoint x="1826" y="445" />
+        <di:waypoint x="1826" y="280" />
+        <di:waypoint x="1846" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowUnknownRecoveryHold_di" bpmnElement="flowUnknownRecoveryHold">
+        <di:waypoint x="1961" y="240" />
+        <di:waypoint x="1911" y="240" />
+        <di:waypoint x="1911" y="330" />
+        <di:waypoint x="1844" y="330" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowReconciliationPending_di" bpmnElement="flowReconciliationPending">
-        <di:waypoint x="3120" y="635" />
-        <di:waypoint x="3120" y="730" />
-        <di:waypoint x="2840" y="730" />
-        <di:waypoint x="2840" y="628" />
+        <di:waypoint x="2246" y="495" />
+        <di:waypoint x="2246" y="590" />
+        <di:waypoint x="1966" y="590" />
+        <di:waypoint x="1966" y="488" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowUnknownRecoveryHash_di" bpmnElement="flowUnknownRecoveryHash">
+        <di:waypoint x="2011" y="240" />
+        <di:waypoint x="2026" y="240" />
+        <di:waypoint x="2026" y="470" />
+        <di:waypoint x="1984" y="470" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowResultReconcile_di" bpmnElement="flowResultReconcile">
-        <di:waypoint x="2858" y="610" />
-        <di:waypoint x="2930" y="610" />
+        <di:waypoint x="1984" y="470" />
+        <di:waypoint x="2056" y="470" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowReconcileGateway_di" bpmnElement="flowReconcileGateway">
-        <di:waypoint x="3030" y="610" />
-        <di:waypoint x="3095" y="610" />
+        <di:waypoint x="2156" y="470" />
+        <di:waypoint x="2221" y="470" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowReconciliationMismatch_di" bpmnElement="flowReconciliationMismatch">
-        <di:waypoint x="3120" y="585" />
-        <di:waypoint x="3120" y="488" />
+        <di:waypoint x="2246" y="445" />
+        <di:waypoint x="2246" y="348" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowReconciliationMatch_di" bpmnElement="flowReconciliationMatch">
-        <di:waypoint x="3145" y="610" />
-        <di:waypoint x="3242" y="610" />
+        <di:waypoint x="2271" y="470" />
+        <di:waypoint x="2368" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowUnknownRecoveryResult_di" bpmnElement="flowUnknownRecoveryResult">
+        <di:waypoint x="1896" y="240" />
+        <di:waypoint x="1961" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowValidateGateway_di" bpmnElement="flowValidateGateway">
+        <di:waypoint x="430" y="390" />
+        <di:waypoint x="505" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowInvalid_di" bpmnElement="flowInvalid">
+        <di:waypoint x="530" y="365" />
+        <di:waypoint x="530" y="268" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowValid_di" bpmnElement="flowValid">
+        <di:waypoint x="530" y="415" />
+        <di:waypoint x="530" y="470" />
+        <di:waypoint x="635" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowSanctionsRequest_di" bpmnElement="flowSanctionsRequest">
+        <di:waypoint x="660" y="495" />
+        <di:waypoint x="660" y="730" />
+        <di:waypoint x="730" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowSanctionsResultJoin_di" bpmnElement="flowSanctionsResultJoin">
+        <di:waypoint x="830" y="730" />
+        <di:waypoint x="934" y="730" />
+        <di:waypoint x="934" y="495" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowAmlResultJoin_di" bpmnElement="flowAmlResultJoin">
+        <di:waypoint x="840" y="470" />
+        <di:waypoint x="909" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flowAmlRequest_di" bpmnElement="flowAmlRequest">
+        <di:waypoint x="685" y="470" />
+        <di:waypoint x="740" y="470" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

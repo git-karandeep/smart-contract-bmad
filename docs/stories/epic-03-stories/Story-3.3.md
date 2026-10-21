@@ -6,7 +6,7 @@ so that compliance checks share stable interfaces without changing transfer beha
 
 ## Acceptance Criteria
 
-- The generated `transfer-lifecycle.bpmn` invokes the KYC, AML, and sanctions processes through Call Activities with explicit process IDs and input/output mappings.
+- The generated `transfer-lifecycle-source.bpmn` invokes the KYC, AML, and sanctions processes through Call Activities with explicit process IDs and input/output mappings.
 - Each mapping passes only the variables required by the called process and returns the declared outcome to the parent.
 - Existing sequence flows, parallel screening behavior, correlation identifiers, timeout boundaries, and terminal outcomes are preserved.
 - Generated parent and called processes validate together, and tests fail when a call target or required mapping is missing.

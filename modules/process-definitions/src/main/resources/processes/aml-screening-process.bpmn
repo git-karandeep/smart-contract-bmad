@@ -17,11 +17,16 @@
       </bpmn:extensionElements>
     </bpmn:serviceTask>
     <bpmn:exclusiveGateway id="amlRequestGateway" name="AML request published?" default="flowAmlPolicyHold" />
-    <bpmn:eventBasedGateway id="amlWait" name="Await AML result or timeout" />
+    <bpmn:eventBasedGateway id="amlWait" name="Await AML result or timeout">
+      <bpmn:outgoing>Flow_1mrvwzd</bpmn:outgoing>
+      <bpmn:outgoing>Flow_17zxx61</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
     <bpmn:intermediateCatchEvent id="amlResult" name="AML result">
+      <bpmn:incoming>Flow_1mrvwzd</bpmn:incoming>
       <bpmn:messageEventDefinition messageRef="amlResultMessage" />
     </bpmn:intermediateCatchEvent>
     <bpmn:intermediateCatchEvent id="amlTimeout" name="AML timeout">
+      <bpmn:incoming>Flow_17zxx61</bpmn:incoming>
       <bpmn:timerEventDefinition>
         <bpmn:timeDuration>PT15M</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
@@ -40,17 +45,17 @@
     <bpmn:sequenceFlow id="amlStartFlow" sourceRef="amlStart" targetRef="requestAml" />
     <bpmn:sequenceFlow id="flowAmlRequestGateway" sourceRef="requestAml" targetRef="amlRequestGateway" />
     <bpmn:sequenceFlow id="flowAmlRequestPublished" sourceRef="amlRequestGateway" targetRef="amlWait">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">amlRequestReady = true</bpmn:conditionExpression>
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=amlRequestReady = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="flowAmlPolicyHold" sourceRef="amlRequestGateway" targetRef="amlPolicyHold">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">amlRequestReady = false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=amlRequestReady = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowAmlResult" sourceRef="amlWait" targetRef="amlResult" />
-    <bpmn:sequenceFlow id="flowAmlTimeout" sourceRef="amlWait" targetRef="amlTimeout" />
     <bpmn:sequenceFlow id="flowAmlResultJoin" sourceRef="amlResult" targetRef="amlEnd" />
     <bpmn:sequenceFlow id="flowAmlTimeoutPersist" sourceRef="amlTimeout" targetRef="amlTimeoutPersist" />
     <bpmn:sequenceFlow id="flowAmlTimeoutJoin" sourceRef="amlTimeoutPersist" targetRef="amlEnd" />
     <bpmn:sequenceFlow id="flowAmlPolicyHoldJoin" sourceRef="amlPolicyHold" targetRef="amlEnd" />
+    <bpmn:sequenceFlow id="Flow_1mrvwzd" sourceRef="amlWait" targetRef="amlResult" />
+    <bpmn:sequenceFlow id="Flow_17zxx61" sourceRef="amlWait" targetRef="amlTimeout" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_aml-screening-process">
     <bpmndi:BPMNPlane id="BPMNPlane_aml-screening-process" bpmnElement="Collaboration_1qpvwrb">
@@ -75,7 +80,7 @@
       <bpmndi:BPMNShape id="amlWait_di" bpmnElement="amlWait">
         <dc:Bounds x="630" y="213" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="614" y="263" width="83" height="27" />
+          <dc:Bounds x="689.5" y="224" width="83" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="amlResult_di" bpmnElement="amlResult">
@@ -119,16 +124,6 @@
         <di:waypoint x="525" y="510" />
         <di:waypoint x="630" y="510" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowAmlResult_di" bpmnElement="flowAmlResult">
-        <di:waypoint x="655" y="213" />
-        <di:waypoint x="655" y="138" />
-        <di:waypoint x="760" y="138" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowAmlTimeout_di" bpmnElement="flowAmlTimeout">
-        <di:waypoint x="655" y="263" />
-        <di:waypoint x="655" y="348" />
-        <di:waypoint x="760" y="348" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowAmlResultJoin_di" bpmnElement="flowAmlResultJoin">
         <di:waypoint x="796" y="138" />
         <di:waypoint x="1060" y="138" />
@@ -146,6 +141,16 @@
         <di:waypoint x="750" y="510" />
         <di:waypoint x="1060" y="510" />
         <di:waypoint x="1060" y="366" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1mrvwzd_di" bpmnElement="Flow_1mrvwzd">
+        <di:waypoint x="655" y="213" />
+        <di:waypoint x="655" y="138" />
+        <di:waypoint x="760" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17zxx61_di" bpmnElement="Flow_17zxx61">
+        <di:waypoint x="655" y="263" />
+        <di:waypoint x="655" y="348" />
+        <di:waypoint x="760" y="348" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

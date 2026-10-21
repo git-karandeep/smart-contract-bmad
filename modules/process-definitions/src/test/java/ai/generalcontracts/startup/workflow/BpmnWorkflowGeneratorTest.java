@@ -28,7 +28,7 @@ class BpmnWorkflowGeneratorTest {
 
     @Test
     void generatesDeterministicParentCalledProcessesAndVersionedReport() throws Exception {
-        Path source = copySource("transfer-lifecycle.bpmn");
+        Path source = copySource("transfer-lifecycle-source.bpmn");
         Path firstOutput = temporaryDirectory.resolve("first");
         Path secondOutput = temporaryDirectory.resolve("second");
 
@@ -36,7 +36,7 @@ class BpmnWorkflowGeneratorTest {
         new BpmnWorkflowGenerator().generate(source, secondOutput);
 
         List<String> artifacts = List.of(
-            "transfer-lifecycle.bpmn",
+            "transfer-lifecycle-source.bpmn",
             "kyc-screening-process.bpmn",
             "aml-screening-process.bpmn",
             "sanctions-screening-process.bpmn",
@@ -51,7 +51,7 @@ class BpmnWorkflowGeneratorTest {
             );
         }
 
-        Document parent = parse(firstOutput.resolve("transfer-lifecycle.bpmn"));
+        Document parent = parse(firstOutput.resolve("transfer-lifecycle-source.bpmn"));
         assertTrue(has(parent, "//bpmn:callActivity[@id='kycScreeningCall']"
             + "/bpmn:extensionElements/zeebe:calledElement[@processId='kyc-screening-process']"));
         assertTrue(has(parent, "//bpmn:callActivity[@id='amlScreeningCall']"
@@ -79,7 +79,7 @@ class BpmnWorkflowGeneratorTest {
     @Test
     void generatedContractsKeepCorrelationsTimeoutsAndWorkerDefinitions() throws Exception {
         Path output = temporaryDirectory.resolve("generated");
-        new BpmnWorkflowGenerator().generate(copySource("transfer-lifecycle.bpmn"), output);
+        new BpmnWorkflowGenerator().generate(copySource("transfer-lifecycle-source.bpmn"), output);
 
         Document kyc = parse(output.resolve("kyc-screening-process.bpmn"));
         Document aml = parse(output.resolve("aml-screening-process.bpmn"));
@@ -106,7 +106,7 @@ class BpmnWorkflowGeneratorTest {
     @Test
     void generatedAmlProcessHasCompleteDiagramInterchange() throws Exception {
         Path output = temporaryDirectory.resolve("generated-with-di");
-        new BpmnWorkflowGenerator().generate(copySource("transfer-lifecycle.bpmn"), output);
+        new BpmnWorkflowGenerator().generate(copySource("transfer-lifecycle-source.bpmn"), output);
         Document aml = parse(output.resolve("aml-screening-process.bpmn"));
 
         assertDiagramCoverage(aml);
@@ -125,7 +125,7 @@ class BpmnWorkflowGeneratorTest {
     @Test
     void generatedKycProcessHasDiagramForExpandedMultiInstanceSubprocess() throws Exception {
         Path output = temporaryDirectory.resolve("generated-kyc-with-di");
-        new BpmnWorkflowGenerator().generate(copySource("transfer-lifecycle.bpmn"), output);
+        new BpmnWorkflowGenerator().generate(copySource("transfer-lifecycle-source.bpmn"), output);
         Document kyc = parse(output.resolve("kyc-screening-process.bpmn"));
 
         assertDiagramCoverage(kyc);
@@ -146,7 +146,7 @@ class BpmnWorkflowGeneratorTest {
     @Test
     void generatedSanctionsProcessHasCompleteDiagramInterchange() throws Exception {
         Path output = temporaryDirectory.resolve("generated-sanctions-with-di");
-        new BpmnWorkflowGenerator().generate(copySource("transfer-lifecycle.bpmn"), output);
+        new BpmnWorkflowGenerator().generate(copySource("transfer-lifecycle-source.bpmn"), output);
         Document sanctions = parse(output.resolve("sanctions-screening-process.bpmn"));
 
         assertDiagramCoverage(sanctions);
@@ -171,7 +171,7 @@ class BpmnWorkflowGeneratorTest {
         assertThrows(BpmnWorkflowGenerator.GenerationException.class,
             () -> new BpmnWorkflowGenerator().generate(malformed, malformedOutput));
 
-        assertFalse(Files.exists(malformedOutput.resolve("transfer-lifecycle.bpmn")));
+        assertFalse(Files.exists(malformedOutput.resolve("transfer-lifecycle-source.bpmn")));
         assertTrue(Files.readString(malformedOutput.resolve("report.json")).contains("\"status\":\"FAILED\""));
         assertTrue(Files.readString(malformedOutput.resolve("report.json")).contains("DOCTYPE"));
 
@@ -197,7 +197,7 @@ class BpmnWorkflowGeneratorTest {
     void rejectsValidationFlowThatBypassesMandatoryScreening() throws Exception {
         Path unsupported = temporaryDirectory.resolve("bypasses-screening.bpmn");
         String sourceXml;
-        try (InputStream source = getClass().getResourceAsStream("/processes/transfer-lifecycle.bpmn")) {
+        try (InputStream source = getClass().getResourceAsStream("/processes/transfer-lifecycle-source.bpmn")) {
             if (source == null) {
                 throw new IllegalStateException("Transfer BPMN test resource is missing");
             }
@@ -215,7 +215,7 @@ class BpmnWorkflowGeneratorTest {
         );
 
         assertTrue(failure.getMessage().contains("flowValid"));
-        assertFalse(Files.exists(output.resolve("transfer-lifecycle.bpmn")));
+        assertFalse(Files.exists(output.resolve("transfer-lifecycle-source.bpmn")));
         assertTrue(Files.readString(output.resolve("report.json")).contains("\"status\":\"FAILED\""));
     }
 
@@ -223,7 +223,7 @@ class BpmnWorkflowGeneratorTest {
     void rejectsAdditionalValidationRouteThatCouldBypassScreening() throws Exception {
         Path unsupported = temporaryDirectory.resolve("extra-validation-route.bpmn");
         String sourceXml;
-        try (InputStream source = getClass().getResourceAsStream("/processes/transfer-lifecycle.bpmn")) {
+        try (InputStream source = getClass().getResourceAsStream("/processes/transfer-lifecycle-source.bpmn")) {
             if (source == null) {
                 throw new IllegalStateException("Transfer BPMN test resource is missing");
             }
@@ -246,7 +246,7 @@ class BpmnWorkflowGeneratorTest {
         );
 
         assertTrue(failure.getMessage().contains("validationGateway"));
-        assertFalse(Files.exists(output.resolve("transfer-lifecycle.bpmn")));
+        assertFalse(Files.exists(output.resolve("transfer-lifecycle-source.bpmn")));
         assertTrue(Files.readString(output.resolve("report.json")).contains("\"status\":\"FAILED\""));
     }
 
@@ -254,7 +254,7 @@ class BpmnWorkflowGeneratorTest {
     void rejectsAdditionalValidationTaskRouteThatCouldBypassScreening() throws Exception {
         Path unsupported = temporaryDirectory.resolve("extra-validation-task-route.bpmn");
         String sourceXml;
-        try (InputStream source = getClass().getResourceAsStream("/processes/transfer-lifecycle.bpmn")) {
+        try (InputStream source = getClass().getResourceAsStream("/processes/transfer-lifecycle-source.bpmn")) {
             if (source == null) {
                 throw new IllegalStateException("Transfer BPMN test resource is missing");
             }
@@ -274,7 +274,7 @@ class BpmnWorkflowGeneratorTest {
         );
 
         assertTrue(failure.getMessage().contains("validateTransfer"));
-        assertFalse(Files.exists(output.resolve("transfer-lifecycle.bpmn")));
+        assertFalse(Files.exists(output.resolve("transfer-lifecycle-source.bpmn")));
         assertTrue(Files.readString(output.resolve("report.json")).contains("\"status\": \"FAILED\""));
     }
 
@@ -282,7 +282,7 @@ class BpmnWorkflowGeneratorTest {
     void rejectsUnknownSubmissionFlowThatCouldReportCompletion() throws Exception {
         Path unsupported = temporaryDirectory.resolve("unknown-submission-completes.bpmn");
         String sourceXml;
-        try (InputStream source = getClass().getResourceAsStream("/processes/transfer-lifecycle.bpmn")) {
+        try (InputStream source = getClass().getResourceAsStream("/processes/transfer-lifecycle-source.bpmn")) {
             if (source == null) {
                 throw new IllegalStateException("Transfer BPMN test resource is missing");
             }
@@ -300,7 +300,7 @@ class BpmnWorkflowGeneratorTest {
         );
 
         assertTrue(failure.getMessage().contains("flowSubmissionUnknown"));
-        assertFalse(Files.exists(output.resolve("transfer-lifecycle.bpmn")));
+        assertFalse(Files.exists(output.resolve("transfer-lifecycle-source.bpmn")));
         assertTrue(Files.readString(output.resolve("report.json")).contains("\"status\":\"FAILED\""));
     }
 
@@ -308,7 +308,7 @@ class BpmnWorkflowGeneratorTest {
     void rejectsFailOpenExecutionGatewayDefault() throws Exception {
         Path unsupported = temporaryDirectory.resolve("fail-open-execution-gateway.bpmn");
         String sourceXml;
-        try (InputStream source = getClass().getResourceAsStream("/processes/transfer-lifecycle.bpmn")) {
+        try (InputStream source = getClass().getResourceAsStream("/processes/transfer-lifecycle-source.bpmn")) {
             if (source == null) {
                 throw new IllegalStateException("Transfer BPMN test resource is missing");
             }
@@ -326,16 +326,16 @@ class BpmnWorkflowGeneratorTest {
         );
 
         assertTrue(failure.getMessage().contains("executionGateway"));
-        assertFalse(Files.exists(output.resolve("transfer-lifecycle.bpmn")));
+        assertFalse(Files.exists(output.resolve("transfer-lifecycle-source.bpmn")));
         assertTrue(Files.readString(output.resolve("report.json")).contains("\"status\":\"FAILED\""));
     }
 
     @Test
     void failedGenerationPreservesTheLastCompleteArtifactSetButReplacesItsSuccessReport() throws Exception {
-        Path source = copySource("transfer-lifecycle.bpmn");
+        Path source = copySource("transfer-lifecycle-source.bpmn");
         Path output = temporaryDirectory.resolve("preserved-output");
         new BpmnWorkflowGenerator().generate(source, output);
-        String lastGoodParent = Files.readString(output.resolve("transfer-lifecycle.bpmn"));
+        String lastGoodParent = Files.readString(output.resolve("transfer-lifecycle-source.bpmn"));
 
         Path unsupported = temporaryDirectory.resolve("unsupported-existing-output.bpmn");
         Files.writeString(unsupported, Files.readString(source).replace(
@@ -347,13 +347,13 @@ class BpmnWorkflowGeneratorTest {
             () -> new BpmnWorkflowGenerator().generate(unsupported, output)
         );
 
-        assertEquals(lastGoodParent, Files.readString(output.resolve("transfer-lifecycle.bpmn")));
+        assertEquals(lastGoodParent, Files.readString(output.resolve("transfer-lifecycle-source.bpmn")));
         assertTrue(Files.readString(output.resolve("report.json")).contains("\"status\": \"FAILED\""));
     }
 
     private Path copySource(String name) throws Exception {
         Path destination = temporaryDirectory.resolve(name);
-        try (InputStream source = getClass().getResourceAsStream("/processes/transfer-lifecycle.bpmn")) {
+        try (InputStream source = getClass().getResourceAsStream("/processes/transfer-lifecycle-source.bpmn")) {
             if (source == null) {
                 throw new IllegalStateException("Transfer BPMN test resource is missing");
             }

@@ -17,11 +17,16 @@
       </bpmn:extensionElements>
     </bpmn:serviceTask>
     <bpmn:exclusiveGateway id="sanctionsRequestGateway" name="Sanctions request published?" default="flowSanctionsPolicyHold" />
-    <bpmn:eventBasedGateway id="sanctionsWait" name="Await sanctions result or timeout" />
+    <bpmn:eventBasedGateway id="sanctionsWait" name="Await sanctions result or timeout">
+      <bpmn:outgoing>Flow_0nurona</bpmn:outgoing>
+      <bpmn:outgoing>Flow_00vrnsm</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
     <bpmn:intermediateCatchEvent id="sanctionsResult" name="Sanctions result">
+      <bpmn:incoming>Flow_00vrnsm</bpmn:incoming>
       <bpmn:messageEventDefinition messageRef="sanctionsResultMessage" />
     </bpmn:intermediateCatchEvent>
     <bpmn:intermediateCatchEvent id="sanctionsTimeout" name="Sanctions timeout">
+      <bpmn:incoming>Flow_0nurona</bpmn:incoming>
       <bpmn:timerEventDefinition>
         <bpmn:timeDuration>PT15M</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
@@ -40,17 +45,17 @@
     <bpmn:sequenceFlow id="sanctionsStartFlow" sourceRef="sanctionsStart" targetRef="requestSanctions" />
     <bpmn:sequenceFlow id="flowSanctionsRequestGateway" sourceRef="requestSanctions" targetRef="sanctionsRequestGateway" />
     <bpmn:sequenceFlow id="flowSanctionsRequestPublished" sourceRef="sanctionsRequestGateway" targetRef="sanctionsWait">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">sanctionsRequestReady = true</bpmn:conditionExpression>
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=sanctionsRequestReady = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="flowSanctionsPolicyHold" sourceRef="sanctionsRequestGateway" targetRef="sanctionsPolicyHold">
-      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">sanctionsRequestReady = false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="bpmn:tFormalExpression">=sanctionsRequestReady = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="flowSanctionsResult" sourceRef="sanctionsWait" targetRef="sanctionsResult" />
-    <bpmn:sequenceFlow id="flowSanctionsTimeout" sourceRef="sanctionsWait" targetRef="sanctionsTimeout" />
     <bpmn:sequenceFlow id="flowSanctionsResultJoin" sourceRef="sanctionsResult" targetRef="sanctionsEnd" />
     <bpmn:sequenceFlow id="flowSanctionsTimeoutPersist" sourceRef="sanctionsTimeout" targetRef="sanctionsTimeoutPersist" />
     <bpmn:sequenceFlow id="flowSanctionsTimeoutJoin" sourceRef="sanctionsTimeoutPersist" targetRef="sanctionsEnd" />
     <bpmn:sequenceFlow id="flowSanctionsPolicyHoldJoin" sourceRef="sanctionsPolicyHold" targetRef="sanctionsEnd" />
+    <bpmn:sequenceFlow id="Flow_0nurona" sourceRef="sanctionsWait" targetRef="sanctionsTimeout" />
+    <bpmn:sequenceFlow id="Flow_00vrnsm" sourceRef="sanctionsWait" targetRef="sanctionsResult" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_sanctions-screening-process">
     <bpmndi:BPMNPlane id="BPMNPlane_sanctions-screening-process" bpmnElement="Collaboration_0i1kpjz">
@@ -76,7 +81,7 @@
       <bpmndi:BPMNShape id="sanctionsWait_di" bpmnElement="sanctionsWait">
         <dc:Bounds x="632" y="213" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="618" y="263" width="79" height="27" />
+          <dc:Bounds x="691.5" y="224" width="79" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="sanctionsResult_di" bpmnElement="sanctionsResult">
@@ -120,16 +125,6 @@
         <di:waypoint x="527" y="510" />
         <di:waypoint x="632" y="510" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowSanctionsResult_di" bpmnElement="flowSanctionsResult">
-        <di:waypoint x="657" y="213" />
-        <di:waypoint x="657" y="138" />
-        <di:waypoint x="762" y="138" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flowSanctionsTimeout_di" bpmnElement="flowSanctionsTimeout">
-        <di:waypoint x="657" y="263" />
-        <di:waypoint x="657" y="348" />
-        <di:waypoint x="762" y="348" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flowSanctionsResultJoin_di" bpmnElement="flowSanctionsResultJoin">
         <di:waypoint x="798" y="138" />
         <di:waypoint x="1110" y="138" />
@@ -147,6 +142,16 @@
         <di:waypoint x="752" y="510" />
         <di:waypoint x="1110" y="510" />
         <di:waypoint x="1110" y="358" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0nurona_di" bpmnElement="Flow_0nurona">
+        <di:waypoint x="657" y="263" />
+        <di:waypoint x="657" y="348" />
+        <di:waypoint x="762" y="348" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_00vrnsm_di" bpmnElement="Flow_00vrnsm">
+        <di:waypoint x="657" y="213" />
+        <di:waypoint x="657" y="138" />
+        <di:waypoint x="762" y="138" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

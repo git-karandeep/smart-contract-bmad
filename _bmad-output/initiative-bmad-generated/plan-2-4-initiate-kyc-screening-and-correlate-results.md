@@ -42,7 +42,7 @@ context:
 - `modules/process-workers/src/main/java/ai/generalcontracts/startup/workflow/ScreeningRequestMessage.java` and `ScreeningRequestPublisher.java` — current minimal provider-neutral Kafka envelope; add only the approved KYC reference shape.
 - `modules/persistence-mongo/src/main/java/ai/generalcontracts/startup/transfer/ScreeningRequestRecord.java` and `ScreeningRequestRepository.java` — current instruction/type uniqueness permits one request per type and must support multiple KYC subjects.
 - `modules/contracts/src/main/java/ai/generalcontracts/startup/transfer/CamundaScreeningWorkflowCorrelator.java` and `ScreeningResultIngestionService.java` — authenticate, validate, persist, deduplicate, and correlate asynchronous results; correlate KYC by its unique request, not only the transfer/type.
-- `modules/process-definitions/src/main/resources/processes/transfer-lifecycle.bpmn` and `TransferLifecycleCamundaWorkers.java` — existing KYC request and wait path; allow all policy-required KYC requests to complete before aggregation while preserving fail-closed joins.
+- `../../modules/process-definitions/src/main/resources/processes/transfer-lifecycle-source.bpmn` and `TransferLifecycleCamundaWorkers.java` — existing KYC request and wait path; allow all policy-required KYC requests to complete before aggregation while preserving fail-closed joins.
 - `modules/process-workers/src/test/java/ai/generalcontracts/startup/workflow/ScreeningRequestServiceTest.java`, `ScreeningResultValidatorTest.java`, and `ScreeningDecisionAggregatorTest.java`; `modules/contracts/src/test/java/ai/generalcontracts/startup/transfer/ScreeningResultIngestionServiceTest.java` — extend request, correlation, decision, and provider-failure coverage.
 
 ## Tasks & Acceptance

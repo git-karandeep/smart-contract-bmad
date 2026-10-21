@@ -2,7 +2,7 @@
 
 ## Epic Goal
 
-Implement an automated BPMN workflow standardization engine that accepts `transfer-lifecycle.bpmn` as input, analyzes its process structure, and generates standardized, executable Camunda 8 BPMN models following enterprise workflow design best practices.
+Implement an automated BPMN workflow standardization engine that accepts `transfer-lifecycle-source.bpmn` as input, analyzes its process structure, and generates standardized, executable Camunda 8 BPMN models following enterprise workflow design best practices.
 
 The engine must identify reusable business capabilities, extract them into independent BPMN processes, and replace the corresponding activities in the parent process with reusable Call Activities. The generated workflows must preserve the original process structure, business logic, sequence flows, message correlations, timeout handling, and error-handling semantics while introducing consistent retry policies, naming conventions, input/output mappings, and reusable process interfaces.
 
@@ -27,7 +27,7 @@ Required reusable processes:
 
 Each reusable process must encapsulate the relevant request, result correlation, timeout handling, retries, and outcome handling.
 
-The parent `transfer-lifecycle.bpmn` must invoke these processes through Camunda 8 Call Activities, using explicitly defined process IDs and input/output mappings.
+The parent `transfer-lifecycle-source.bpmn` must invoke these processes through Camunda 8 Call Activities, using explicitly defined process IDs and input/output mappings.
 
 ### 3. Retry and Failure-Handling Standards
 

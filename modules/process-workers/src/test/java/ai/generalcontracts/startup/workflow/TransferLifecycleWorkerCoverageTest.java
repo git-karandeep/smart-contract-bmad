@@ -45,7 +45,7 @@ class TransferLifecycleWorkerCoverageTest {
 
     @Test
     void generatedCallTargetsAndUnknownSubmissionRecoveryRemainFailClosed() throws Exception {
-        Document document = parse("/generated-processes/transfer-lifecycle.bpmn");
+        Document document = parse("/generated-processes/transfer-lifecycle-source.bpmn");
         var xpath = XPathFactory.newInstance().newXPath();
         xpath.setNamespaceContext(new TransferLifecycleBpmnTestNamespaceContext());
 
@@ -216,7 +216,7 @@ class TransferLifecycleWorkerCoverageTest {
     }
 
     private Document parse() throws Exception {
-        return parse("/processes/transfer-lifecycle.bpmn");
+        return parse("/processes/transfer-lifecycle-source.bpmn");
     }
 
     private Document parse(String resource) throws Exception {
@@ -233,7 +233,7 @@ class TransferLifecycleWorkerCoverageTest {
 
     private String[] generatedArtifacts() {
         return new String[] {
-            "transfer-lifecycle.bpmn",
+            "transfer-lifecycle-source.bpmn",
             "kyc-screening-process.bpmn",
             "aml-screening-process.bpmn",
             "sanctions-screening-process.bpmn"

@@ -20,4 +20,4 @@ so that deployment and process outcomes remain correct across the generated work
 
 - Epic — [Standardized BPMN Design and Reusable Workflow Generator](../../epics/epic-03-wallet-standardization.md)
 - Architecture — [Process and end-to-end testing strategy](../../architecture/coding-standards.md)
-- Existing process — `modules/process-definitions/src/main/resources/processes/transfer-lifecycle.bpmn`
+- Existing process — `../../../modules/process-definitions/src/main/resources/processes/transfer-lifecycle-source.bpmn`

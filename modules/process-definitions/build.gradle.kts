@@ -10,7 +10,8 @@ repositories {
 }
 
 dependencies {
-    implementation("io.camunda:zeebe-bpmn-model:8.9.0")
+//  implementation("io.camunda:zeebe-bpmn-model:8.9.0")
+    implementation(platform("io.camunda:zeebe-bom:8.9.0"))
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
@@ -18,7 +19,7 @@ dependencies {
 val generatedResourceRoot = layout.buildDirectory.dir("generated/resources/main")
 val generatedProcessDirectory = generatedResourceRoot.map { it.dir("generated-processes") }
 val transferLifecycleSource = layout.projectDirectory.file(
-    "src/main/resources/processes/transfer-lifecycle.bpmn"
+    "src/main/resources/processes/transfer-lifecycle-source.bpmn"
 )
 
 sourceSets.named("main") {

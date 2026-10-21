@@ -183,7 +183,7 @@ class TransferLifecycleBpmnTest {
     }
 
     private Document parse() throws Exception {
-        try (InputStream model = getClass().getResourceAsStream("/processes/transfer-lifecycle.bpmn")) {
+        try (InputStream model = getClass().getResourceAsStream("/processes/transfer-lifecycle-source.bpmn")) {
             assertNotNull(model);
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
